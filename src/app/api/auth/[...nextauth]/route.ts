@@ -4,16 +4,21 @@ import GoogleProvider from "next-auth/providers/google";
 import { compare } from "bcryptjs";
 import mysql from "mysql2/promise";
 
-const handler = NextAuth({
+export const authOptions = {
+  session: { strategy: "jwt" },
+
   providers: [
-    // ✅ Email + Password
+    // --- Email + Password ---
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "email", placeholder: "m@example.com" },
+        email: { label: "Email", type: "email", placeholder: "you@example.com" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password)
+          throw new Error("Missing email or password");
+
         const connection = await mysql.createConnection({
           host: process.env.DB_HOST!,
           user: process.env.DB_USER!,
@@ -22,26 +27,27 @@ const handler = NextAuth({
         });
 
         const [rows]: any = await connection.execute(
-          "SELECT * FROM users WHERE email = ? LIMIT 1",
-          [credentials?.email]
+          "SELECT id, name, email, password, role FROM users WHERE email = ? LIMIT 1",
+          [credentials.email]
         );
+        await connection.end();
 
         const user = rows[0];
         if (!user) throw new Error("No user found");
 
-        const isValid = await compare(credentials!.password, user.password);
+        const isValid = await compare(credentials.password, user.password);
         if (!isValid) throw new Error("Invalid password");
 
         return {
-          id: user.id,
+          id: String(user.id),
           name: user.name,
           email: user.email,
-          role: user.role,
+          role: user.role || "student",
         };
       },
     }),
 
-    // ✅ Google OAuth
+    // --- Google OAuth ---
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
@@ -49,28 +55,44 @@ const handler = NextAuth({
   ],
 
   callbacks: {
+    // --- Store role in JWT ---
     async jwt({ token, user }) {
       if (user) {
-        token.role = user.role;
+        token.id = user.id;
+        token.role = user.role || "student";
       }
       return token;
     },
 
+    // --- Expose role in session ---
     async session({ session, token }) {
-      if (token) {
-        session.user.role = token.role;
+      if (token && session.user) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
       }
       return session;
     },
 
+    // --- Redirect after login ---
     async redirect({ url, baseUrl }) {
-      return baseUrl;
+      // When a user logs in, redirect based on role
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+
+      try {
+        const role = new URL(url).searchParams.get("role");
+        if (role === "admin") return `${baseUrl}/dashboard/admin`;
+        if (role === "cash_user") return `${baseUrl}/dashboard/cash`;
+        return `${baseUrl}/dashboard/student`;
+      } catch {
+        return `${baseUrl}/dashboard/student`;
+      }
     },
   },
 
   pages: {
     signIn: "/login",
   },
-});
+};
 
+const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
