@@ -53,13 +53,13 @@ export default function RegisterForm() {
     e.preventDefault()
 
     if (formData.password !== formData.confirmPassword){
-      setAlert({
+      return setAlert({
           show: true,
           type: "warning",
           title: "Warning",
           description:"Password doesn't match"
-        })
-    } return
+        }) 
+    } 
 
     try {
       const res = await fetch("/api/register", {
