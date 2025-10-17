@@ -5,9 +5,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import google from "@/components/icons/google.png";
-import logo from "@/components/icons/logo.png";
+import { cn } from "@/lib/utils";
+import { AppAlert } from "@/components/alerts";
 import Image from "next/image";
+
 import {
   Field,
   FieldDescription,
@@ -15,13 +16,14 @@ import {
   FieldLabel,
   FieldSeparator,
 } from "@/components/ui/field";
-import { cn } from "@/lib/utils";
-import { AppAlert } from "@/components/alerts"; // 👈 Alert component
+
+import google from "@/components/icons/google.png";
+import logo from "@/components/icons/logo.png";
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false); // 👈 Google button loading
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   // 🔔 Alert state
   const [alert, setAlert] = useState({
@@ -31,6 +33,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     description: "",
   });
 
+  // 🔑 Handle Credentials Login
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -49,7 +52,6 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     setLoading(false);
 
     if (res?.error) {
-      // ❌ Login error
       setAlert({
         show: true,
         type: "error",
@@ -60,7 +62,6 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     }
 
     if (res?.ok) {
-      // ✅ Success
       setAlert({
         show: true,
         type: "success",
@@ -68,17 +69,24 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
         description: "Redirecting you to your dashboard...",
       });
 
+      const session = await fetch("/api/auth/session").then((r) => r.json());
+      const role = session?.user?.role || "student";
+
       setTimeout(() => {
-        router.push("/dashboard");
+        if (role === "admin") router.push("/dashboard/admin");
+        else if (role === "cash") router.push("/dashboard/cash");
+        else router.push("/dashboard");
       }, 1200);
+
     }
   }
 
+  // 🔹 Handle Google Login
   async function handleGoogleLogin() {
     try {
-      setGoogleLoading(true); // 👈 start loading
+      setGoogleLoading(true);
       await signIn("google", { callbackUrl: "/dashboard" });
-    } catch (error) {
+    } catch {
       setAlert({
         show: true,
         type: "error",
@@ -86,16 +94,16 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
         description: "Unable to sign in with Google right now. Try again later.",
       });
     } finally {
-      setGoogleLoading(false); // 👈 stop loading
+      setGoogleLoading(false);
     }
   }
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      {/* 🔔 Alert Message */}
+      {/* 🔔 Floating Alert */}
       <div
         className={cn(
-          "fixed top-4 right-4 z-50 w-[300px] transition-transform duration-300 ease-in-out",
+          "fixed top-4 right-4 z-50 w-[300px] transition-all duration-300 ease-in-out",
           alert.show ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
         )}
       >
@@ -118,10 +126,14 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
               width={100}
               height={100}
               className="drop-shadow-lg"
+              priority
             />
             <h1 className="text-xl font-bold">Welcome to CS With Bari</h1>
             <FieldDescription>
-              Don&apos;t have an account? <a href="/register">Sign up</a>
+              Don&apos;t have an account?{" "}
+              <a href="/register" className="text-blue-400 hover:underline">
+                Sign up
+              </a>
             </FieldDescription>
           </div>
 
@@ -134,30 +146,38 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
               required
               placeholder="m@example.com"
             />
+          </Field>
+
+          <Field>
             <FieldLabel htmlFor="password">Password</FieldLabel>
             <Input id="password" name="password" type="password" required />
           </Field>
 
           <Field>
-            <Button type="submit" disabled={loading}>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full font-semibold"
+            >
               {loading ? "Logging in..." : "Login"}
             </Button>
           </Field>
 
           <FieldSeparator>Or</FieldSeparator>
 
-          <Field className="grid gap-4 sm:grid-cols-1">
+          <Field>
             <Button
               variant="outline"
               type="button"
               disabled={googleLoading}
               onClick={handleGoogleLogin}
+              className="w-full flex items-center justify-center gap-2"
             >
               {googleLoading ? (
                 "Loading..."
               ) : (
                 <>
-                  <Image src={google} alt="google" width={20} height={20} />
+                  <Image src={google} alt="Google" width={20} height={20} />
                   Continue with Google
                 </>
               )}
@@ -166,10 +186,16 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
         </FieldGroup>
       </form>
 
-      <FieldDescription className="px-6 text-center">
+      <FieldDescription className="px-6 text-center text-sm">
         By clicking continue, you agree to our{" "}
-        <a href="#">Terms of Service</a> and{" "}
-        <a href="#">Privacy Policy</a>.
+        <a href="#" className="text-blue-400 hover:underline">
+          Terms of Service
+        </a>{" "}
+        and{" "}
+        <a href="#" className="text-blue-400 hover:underline">
+          Privacy Policy
+        </a>
+        .
       </FieldDescription>
     </div>
   );

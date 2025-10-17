@@ -59,7 +59,8 @@ export default function RegisterForm() {
           title: "Warning",
           description:"Password doesn't match"
         })
-    } return
+        return
+    } 
 
     try {
       const res = await fetch("/api/register", {
@@ -116,6 +117,7 @@ export default function RegisterForm() {
         title: "Success!",
         description: data.message || "User registered successfully.",
       })
+      window.location.href=('/login')
     } catch (err) {
       console.error(err)
       setAlert({
