@@ -1,26 +1,55 @@
-"use client";
+// import { AppSidebar } from "@/components/app-sidebar"
+// import { getServerSession } from "next-auth";
+// import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+// import { Breadcrumb } from "@/components/ui/breadcrumb"
+// import { Separator } from "@/components/ui/separator"
+// import {
+//   SidebarInset,
+//   SidebarProvider,
+//   SidebarTrigger,
+// } from "@/components/ui/sidebar"
+// import { ModeToggle } from "@/components/modeToogle";
 
-import ProtectedRoute from "@/components/auth/protectedRoute";
-import Loader from "@/components/loader";
-import { Button } from "@/components/ui/button";
-import { signOut } from "next-auth/react";
-import { useState } from "react";
-export default function AdminDashboard() {
-  
-  const [loading, setLoading] = useState(false);
+// export default async function Page() {
 
-  const handleLogout = async () => {
-    setLoading(true);
-    await signOut({ callbackUrl: "/login" });
-  };
-    if (loading) return <Loader isLoading={true} className="h-screen" />;
+//   const session = await getServerSession(authOptions);
+
+//   return (
+//     <SidebarProvider>
+//       <AppSidebar />
+//       <SidebarInset>
+//         <header className="flex h-16 shrink-0 items-center gap-2 border-b">
+//           <div className="flex items-center gap-2 px-3">
+//             <SidebarTrigger />
+//             <ModeToggle/>
+//             <Separator orientation="vertical" className="mr-2 h-4" />
+//             <Breadcrumb className="text-sm">
+//               Welcome back, {session?.user.name}
+//             </Breadcrumb>
+//           </div>
+//         </header>
+//         <div className="flex flex-1 flex-col gap-4 p-4">
+//           <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+//             <div className="bg-muted/50 aspect-video rounded-xl" />
+//             <div className="bg-muted/50 aspect-video rounded-xl" />
+//             <div className="bg-muted/50 aspect-video rounded-xl" />
+//           </div>
+//           <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" />
+//         </div>
+//       </SidebarInset>
+//     </SidebarProvider>
+//   )
+// }
+
+export default function DashboardPage() {
   return (
-    <ProtectedRoute allowedRoles={["admin"]}>
-      <div className="p-6">
-        <h1 className="text-2xl font-bold">🛠 Admin Dashboard</h1>
-        <p>Manage courses, users, and payments here.</p>
-        <Button onClick={handleLogout} variant={'outline'} >Logout</Button>
+    <div className="flex flex-col gap-4">
+      <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+        <div className="bg-muted/50 aspect-video rounded-xl" />
+        <div className="bg-muted/50 aspect-video rounded-xl" />
+        <div className="bg-muted/50 aspect-video rounded-xl" />
       </div>
-    </ProtectedRoute>
+      <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" />
+    </div>
   );
 }
