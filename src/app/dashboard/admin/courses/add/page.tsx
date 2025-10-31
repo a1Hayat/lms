@@ -71,7 +71,7 @@ export default function AddCourseForm() {
   })
   const { watch, reset, getValues } = methods
 
-  const [step, setStep] = useState<number>(3)
+  const [step, setStep] = useState<number>(1)
   const formState = watch()
 
   // Restore draft from localStorage on mount
