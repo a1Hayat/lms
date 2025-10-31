@@ -60,12 +60,12 @@ const data = {
       items: [
         {
           title: "Courses",
-          url: "#",
+          url: "/dashboard/admin/courses",
         },
          { title: "Enrollments", url: "#" },
         {
           title: "Add New Course",
-          url: "#",
+          url: "/dashboard/admin/courses/add",
         },
       ],
     },
