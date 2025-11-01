@@ -6,17 +6,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { MoreHorizontal } from "lucide-react"
-import { IconArrowsMaximize, IconBasket, IconEdit, IconEye, IconFilePlus, IconTrash } from "@tabler/icons-react"
-import { Separator } from "@radix-ui/react-separator"
+import { IconEdit, IconTrash } from "@tabler/icons-react"
 import { useState } from "react"
 
-// This type is used to define the shape of our data.
-// You can use a Zod schema here if you want.
-
-
 export const Courses: ColumnDef<courses>[] = [
-   {
-    id: "title",
+  {
+    accessorKey: 'title',
     header: "Title",
     cell: ({ row }) => {
       const course = row.original
@@ -25,10 +20,10 @@ export const Courses: ColumnDef<courses>[] = [
           <Avatar>
             <AvatarImage
               src={course.thumbnail}
-              alt='img'
+              alt="img"
               height={30}
               width={30}
-              className="rounded-md"
+              className="rounded"
             />
           </Avatar>
           <span>{course.title}</span>
@@ -36,7 +31,10 @@ export const Courses: ColumnDef<courses>[] = [
       )
     },
   },
-
+  {
+    accessorKey: "level",
+    header: "Level",
+  },
   {
     accessorKey: "price",
     header: "Price",
@@ -46,47 +44,58 @@ export const Courses: ColumnDef<courses>[] = [
     header: "Enrolled",
   },
   {
+    accessorkey:'lessons',
+    header:'Lessons'
+  },
+  {
     accessorKey: "instructor_id",
     header: "Instructor",
   },
   {
     accessorKey: "created_at",
-    header: "Registered at",
+    header: "Created at",
+    cell: ({ getValue }) => {
+      const dateString = getValue<string>()
+      const formatted = new Intl.DateTimeFormat("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(dateString))
+
+      return <span>{formatted}</span>
+    },
   },
   {
     id: "actions",
     cell: ({ row }) => {
       const course = row.original
       const [edit, setEdit] = useState(false)
+
       return (
         <DropdownMenu>
-          {/* <Edit_Admin
-            isOpen={edit}
-            onClose={()=>setEdit(false)}
-            user_id={user.id}
-            user_role={user.role}
-          /> */}
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 p-0">
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
+
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>
-                <IconEdit/> <button onClick={()=>setEdit(true)}>Edit</button>
+            <DropdownMenuItem onClick={() => setEdit(true)}>
+              <IconEdit className="mr-2 h-4 w-4" /> Edit
             </DropdownMenuItem>
 
-            <DropdownMenuSeparator/>
+            <DropdownMenuSeparator />
 
             <DropdownMenuItem>
-                <IconTrash className="text-red-500 dark:text-red-700"/> <button className="text-red-500 dark:text-red-700">Delete</button>
+              <IconTrash className="mr-2 h-4 w-4 text-red-500 dark:text-red-700" />
+              <span className="text-red-500 dark:text-red-700">Delete</span>
             </DropdownMenuItem>
-
           </DropdownMenuContent>
         </DropdownMenu>
       )
     },
   },
 ]
-

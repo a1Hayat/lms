@@ -3,8 +3,8 @@ import { db } from "@/lib/db";
 
 export async function POST() {
   try {
-    const courses = await db.query("SELECT * FROM courses");
-    return NextResponse.json({ courses });
+    const [rows] = await db.query("SELECT * FROM courses");
+    return NextResponse.json({ courses: rows }); // ✅ rows is your data
   } catch (err) {
     console.error("Fetch error:", err);
     return NextResponse.json(

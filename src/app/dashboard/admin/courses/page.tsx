@@ -49,10 +49,10 @@ useEffect(() => {
       
       setIsLoading(true)
       try {
-        const CourseData = await fetchCourse() // ✅ use UnitId
-
-        setCourseDetails(CourseData)
         
+        const CourseData = await fetchCourse()
+        setCourseDetails(CourseData)
+
       } catch (error) {
         console.error("Failed to fetch data:", error)
       } finally {
@@ -61,11 +61,9 @@ useEffect(() => {
     }
 
     fetchData()
-  }, []) // ✅ refetch when unit changes
+  }, []) 
 
     return (
-        
-
         <div className="px-10 w-[100%]">
             {/* <Add_admin
               isOpen={AddUser}
@@ -91,14 +89,14 @@ useEffect(() => {
 
           {isLoading ? (
               <LoadingSkeletonTable />
-            ) : CourseDetails && CourseDetails.length > 0 ? (
+            ) : CourseDetails.length > 0 ? (
               <div>
                 <CoursesDataTable columns={Courses} data={CourseDetails} />
               </div>   
             ) : (
               <div className="flex flex-col items-center justify-center py-10">
                 <Image
-                  src="/images/empty.png"
+                  src={nothing}
                   alt="nothing_found"
                   height={120}
                   width={120}

@@ -48,7 +48,19 @@ export const admin_users: ColumnDef<users>[] = [
   },
   {
     accessorKey: "created_at",
-    header: "Registered at",
+    header: "Created at",
+    cell: ({ getValue }) => {
+      const dateString = getValue<string>()
+      const formatted = new Intl.DateTimeFormat("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(dateString))
+
+      return <span>{formatted}</span>
+    },
   },
   {
     id: "actions",
