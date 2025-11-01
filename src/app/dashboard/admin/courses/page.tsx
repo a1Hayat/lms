@@ -11,37 +11,53 @@ import { courses } from "../../../../../types/courses";
 import { CoursesDataTable } from "./data-table";
 import { Courses } from "./columns";
 import nothing from '@/components/images/empty.png'
+import { AppAlert } from "@/components/alerts";
 
 export default function Students () {
 
 const [isLoading, setIsLoading] = useState(false)
 const [AddUser, setAddUser] = useState(false)
 const [CourseDetails, setCourseDetails] = useState<courses[]>([])
-
+ const [alert, setAlert] = useState({
+    show: false,
+    type: "info" as "success" | "error" | "warning" | "info",
+    title: "",
+    description: "",
+  })
 const fetchCourse = async () => {
-    
-      setIsLoading(true)
-      
-      try {
-        const res = await fetch('/api/courses/fetch-all', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+  try {
+    setIsLoading(true);
 
-        const data = await res.json();
-        if (data.courses) {
-          return(data.courses);
-        }
-      } catch (err) {
-        console.error('Failed to fetch courses:', err);
-      }
-      
-      
-      setIsLoading(false)
-    
-}
+    const res = await fetch("/api/courses/fetch-all", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "no-store", // optional: ensures fresh data (Next.js App Router)
+    });
+
+    if (!res.ok) {
+      setAlert({
+          show: true,
+          type: "error",
+          title: "Fetch Failed!",
+          description: "Server error, please try again later.",
+        })
+    }
+
+    const data = await res.json();
+
+    if (data.courses) {
+      return data.courses;
+    }
+  } catch (err) {
+    console.error("Failed to fetch courses:", err);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
 
 
 useEffect(() => {
@@ -65,6 +81,13 @@ useEffect(() => {
 
     return (
         <div className="px-10 w-[100%]">
+          <AppAlert
+            type={alert.type}
+            title={alert.title}
+            description={alert.description}
+            open={alert.show}
+            onClose={() => setAlert({ ...alert, show: false })}
+          />
             {/* <Add_admin
               isOpen={AddUser}
               onClose={()=>setAddUser(false)}
@@ -86,6 +109,7 @@ useEffect(() => {
                   </Button>
             </div>
             
+
 
           {isLoading ? (
               <LoadingSkeletonTable />

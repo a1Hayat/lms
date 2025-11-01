@@ -2,7 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { courses } from "../../../../../types/courses"
-import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar"
+import { Avatar, AvatarImage } from "@radix-ui/react-avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { MoreHorizontal } from "lucide-react"
@@ -44,11 +44,11 @@ export const Courses: ColumnDef<courses>[] = [
     header: "Enrolled",
   },
   {
-    accessorkey:'lessons',
-    header:'Lessons'
+    accessorKey: "lessons_count",
+    header: "Lessons",
   },
   {
-    accessorKey: "instructor_id",
+    accessorKey: "instructor_name",
     header: "Instructor",
   },
   {
