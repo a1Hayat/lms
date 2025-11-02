@@ -59,25 +59,33 @@ const fetchCourse = async () => {
 
 
 
-
 useEffect(() => {
-    const fetchData = async () => {
-      
-      setIsLoading(true)
-      try {
-        
-        const CourseData = await fetchCourse()
-        setCourseDetails(CourseData)
+  let isMounted = true; // ✅ prevents state updates if component unmounts
 
-      } catch (error) {
-        console.error("Failed to fetch data:", error)
-      } finally {
-        setIsLoading(false)
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const CourseData = await fetchCourse();
+
+      // ✅ Only update state if the component is still mounted
+      if (isMounted && CourseData) {
+        setCourseDetails(CourseData);
       }
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
+    } finally {
+      if (isMounted) setIsLoading(false);
     }
+  };
 
-    fetchData()
-  }, []) 
+  fetchData();
+
+
+  return () => {
+    isMounted = false;
+  };
+}, []);
+
 
     return (
         <div className="px-10 w-[100%]">

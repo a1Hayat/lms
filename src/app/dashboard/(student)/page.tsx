@@ -14,6 +14,7 @@ export default function AdminDashboard() {
     await signOut({ callbackUrl: "/login" });
   };
     if (loading) return <Loader isLoading={true} className="h-screen" />;
+    
   return (
     <ProtectedRoute allowedRoles={["student"]}>
       <div className="p-6">
