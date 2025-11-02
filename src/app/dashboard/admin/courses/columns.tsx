@@ -32,9 +32,24 @@ export const Courses: ColumnDef<courses>[] = [
     },
   },
   {
-    accessorKey: "level",
-    header: "Level",
+  accessorKey: "level",
+  header: "Level",
+  cell: ({ getValue }) => {
+    const level = getValue<string>();
+
+    const formattedLevel =
+      level === "o-level"
+        ? "O Level | IGCSE"
+        : level === "as-level"
+        ? "AS Level | A-1"
+        : level === "a-level"
+        ? "A Level | A-2"
+        : level; // fallback
+
+    return <span>{formattedLevel}</span>;
   },
+},
+
   {
     accessorKey: "price",
     header: "Price",
