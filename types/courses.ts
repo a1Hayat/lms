@@ -1,13 +1,26 @@
+// types/courses.ts
+
+export type lesson = {
+  id: number;
+  title: string;
+  length: string; // or "length", depending on your DB field
+  video_path: string;
+};
+
 export type courses = {
-    id: number;
-    title: string;
-    level: string;
-    description: string;
-    thumbnail:string;
-    price: number;
-    instructor_id: number;
-    created_at: string;
-} 
+  id: number;
+  title: string;
+  level: string;
+  description: string;
+  thumbnail: string;
+  price: number;
+  instructor_id: number;
+  created_at: string;
+
+  // ✅ Add this (optional)
+  curriculum?: lesson[];
+};
+
 
 export type lessons = {
     id: number;

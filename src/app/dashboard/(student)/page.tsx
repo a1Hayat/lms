@@ -4,7 +4,7 @@ import ProtectedRoute from "@/components/auth/protectedRoute";
 import Loader from "@/components/loader";
 import { Button } from "@/components/ui/button";
 import { signOut } from "next-auth/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react"
 import banner from "@/components/images/banners/banner-1.jpg"
 import Image from "next/image";
@@ -13,6 +13,10 @@ import { SessionDataTable } from "./data-table";
 import { upcoming_session } from "./columns";
 import { session } from "../../../../types/sessions";
 import { data } from "../../../../types/sessions"
+import { CourseCardSkeletonRow } from "@/components/loadingSkeleton";
+import CourseCard from "@/components/courseCard";
+import { courses } from "../../../../types/courses";
+import CourseGrid from "@/components/CourseGrid";
 
 export default function StudentDashboard() {
   
@@ -21,6 +25,82 @@ export default function StudentDashboard() {
 
     if (loading) return <Loader isLoading={true} className="h-screen" />;
   const { data: session } = useSession()
+
+
+  const [isloading, setIsLoading] = useState(false);
+  const [AddUser, setAddUser] = useState(false)
+  const [CourseDetails, setCourseDetails] = useState<courses[]>([])
+  const [alert, setAlert] = useState({
+    show: false,
+    type: "info" as "success" | "error" | "warning" | "info",
+    title: "",
+    description: "",
+  })
+
+  const fetchCourses = async () => {
+    try {
+      setIsLoading(true);
+  
+      const res = await fetch("/api/courses/fetch-all", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "no-store", // optional: ensures fresh data (Next.js App Router)
+      });
+  
+      if (!res.ok) {
+        setAlert({
+            show: true,
+            type: "error",
+            title: "Fetch Failed!",
+            description: "Server error, please try again later.",
+          })
+      }
+  
+      const data = await res.json();
+  
+      if (data.courses) {
+        return data.courses;
+      }
+    } catch (err) {
+      console.error("Failed to fetch courses:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  
+  
+  useEffect(() => {
+    let isMounted = true; // ✅ prevents state updates if component unmounts
+  
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const CourseData = await fetchCourses();
+  
+        // ✅ Only update state if the component is still mounted
+        if (isMounted && CourseData) {
+          setCourseDetails(CourseData);
+        }
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+  
+    fetchData();
+  
+  
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+  
+
+
   return (
     <ProtectedRoute allowedRoles={["student"]}>
          <div className="min-h-screen text-gray-900 dark:text-white grid grid-cols-1 md:grid-cols-12 gap-6 transition-colors duration-300">
@@ -87,8 +167,23 @@ export default function StudentDashboard() {
       
 
         {/* Box 4 - Courses + Resources + Recent */}
-        <div className="bg-white dark:bg-neutral-900 rounded-lg p-4 text-center shadow-md flex-1">
-          <p>Enrolled Courses + Resources + Recent</p>
+        <div className=" rounded-lg p-4 flex-1">
+          <p className=" font-bold mb-5">Your Courses</p>
+          {isloading ? (
+            <CourseCardSkeletonRow />
+          ) : CourseDetails.length > 0 ? (
+            <CourseGrid
+              courses={CourseDetails}  
+              columns={2}              
+              showInstructor={false}   
+              onCardClick={(course) => console.log("Clicked:", course.title)}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center py-10 text-gray-500">
+              No courses available.
+            </div>
+          )}
+
         </div>
       </div>
 

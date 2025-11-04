@@ -18,7 +18,7 @@ export default function Students () {
 const [isLoading, setIsLoading] = useState(false)
 const [AddUser, setAddUser] = useState(false)
 const [CourseDetails, setCourseDetails] = useState<courses[]>([])
- const [alert, setAlert] = useState({
+const [alert, setAlert] = useState({
     show: false,
     type: "info" as "success" | "error" | "warning" | "info",
     title: "",
