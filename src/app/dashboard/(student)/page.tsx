@@ -37,38 +37,44 @@ export default function StudentDashboard() {
     description: "",
   })
 
-  const fetchCourses = async () => {
-    try {
-      setIsLoading(true);
-  
-      const res = await fetch("/api/courses/fetch-all", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        cache: "no-store", // optional: ensures fresh data (Next.js App Router)
+const fetchCourses = async () => {
+  try {
+    setIsLoading(true);
+
+    const res = await fetch("/api/courses/enrolled", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+      body: JSON.stringify({ user_id: session?.user?.id }),
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      setAlert({
+        show: true,
+        type: "error",
+        title: "Error",
+        description: "Failed to load your courses",
       });
-  
-      if (!res.ok) {
-        setAlert({
-            show: true,
-            type: "error",
-            title: "Fetch Failed!",
-            description: "Server error, please try again later.",
-          })
-      }
-  
-      const data = await res.json();
-  
-      if (data.courses) {
-        return data.courses;
-      }
-    } catch (err) {
-      console.error("Failed to fetch courses:", err);
-    } finally {
-      setIsLoading(false);
+      return [];
     }
-  };
+
+    return data.courses;
+  } catch (err) {
+    console.error("Failed to fetch courses:", err);
+    setAlert({
+      show: true,
+      type: "error",
+      title: "Server Error",
+      description: "Please try again later.",
+    });
+    return [];
+  } finally {
+    setIsLoading(false);
+  }
+};
+
   
   
   

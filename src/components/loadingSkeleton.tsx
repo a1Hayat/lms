@@ -41,7 +41,7 @@ export function LoadingSkeletonView() {
 
 export function CourseCardSkeletonRow() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
+    <div className="grid grid-cols-2 sm:grid-cols-2 gap-6 w-full">
       {[...Array(2)].map((_, i) => (
         <div
           key={i}

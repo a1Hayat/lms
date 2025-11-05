@@ -1,21 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { IconBrandYoutube, IconBook2, IconPlayerPlay } from "@tabler/icons-react";
+import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { IconBrandYoutube, IconPlayerPlay, IconBrandParsinta } from "@tabler/icons-react";
 import Loader from "@/components/loader";
 import type { courses, lesson } from "../../../../../../../types/courses";
 
 export default function CoursePlayerPage() {
   const { token } = useParams();
+  const router = useRouter();
+  const { data: session, status } = useSession();
+
   const [course, setCourse] = useState<courses | null>(null);
   const [courseId, setCourseId] = useState<string | null>(null);
   const [activeLesson, setActiveLesson] = useState<lesson | null>(null);
   const [videoToken, setVideoToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [videoLoading, setVideoLoading] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(false);
 
-  // ✅ Step 1: Decode the course token (from URL)
+  // ✅ decode course token
   useEffect(() => {
     if (!token) return;
 
@@ -32,23 +37,44 @@ export default function CoursePlayerPage() {
         if (data.success && data.courseId) {
           setCourseId(data.courseId);
         } else {
-          console.error("Invalid or expired course token");
-          window.location.href = "/dashboard";
+          router.push("/dashboard");
         }
-      } catch (error) {
-        console.error("Token decoding failed:", error);
+      } catch {
+        router.push("/dashboard");
       }
     };
 
     decodeToken();
-  }, [token]);
+  }, [token, router]);
 
-  // ✅ Step 2: Fetch the course data and its curriculum
+  // ✅ Check enrollment
+  useEffect(() => {
+    if (!session?.user?.id || !courseId) return;
+
+    const checkEnroll = async () => {
+      const res = await fetch("/api/check-enrollments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: session.user.id, course_id: courseId }),
+      });
+
+      const data = await res.json();
+
+      if (data.purchased) {
+        setIsEnrolled(true);
+      } else {
+        router.push(`/dashboard/courses/${token}`); // redirect to course page
+      }
+    };
+
+    checkEnroll();
+  }, [courseId, session, token, router]);
+
+  // ✅ fetch course
   useEffect(() => {
     if (!courseId) return;
 
     const fetchCourse = async () => {
-      setLoading(true);
       try {
         const res = await fetch("/api/courses/fetch-course", {
           method: "POST",
@@ -58,25 +84,25 @@ export default function CoursePlayerPage() {
 
         const data = await res.json();
 
-        if (data.success && data.course) {
+        if (data.success) {
           setCourse(data.course);
           if (data.course.curriculum?.length > 0) {
             setActiveLesson(data.course.curriculum[0]);
           }
         } else {
-          console.error("Course not found");
+          router.push("/dashboard");
         }
-      } catch (error) {
-        console.error("Failed to fetch course:", error);
+      } catch {
+        router.push("/dashboard");
       } finally {
         setLoading(false);
       }
     };
 
     fetchCourse();
-  }, [courseId]);
+  }, [courseId, router]);
 
-  // ✅ Step 3: Request secure video token for active lesson
+  // ✅ fetch secure video token
   const fetchVideoToken = async (videoPath: string) => {
     setVideoLoading(true);
     try {
@@ -87,122 +113,106 @@ export default function CoursePlayerPage() {
       });
 
       const data = await res.json();
-      if (data.token) setVideoToken(data.token);
-      else console.error("Failed to get video token");
-    } catch (error) {
-      console.error("Video token request failed:", error);
+      setVideoToken(data.token || null);
     } finally {
       setVideoLoading(false);
     }
   };
 
-  // ✅ Step 4: Whenever lesson changes, fetch its secure video token
+  // ✅ on lesson change
   useEffect(() => {
     if (activeLesson?.video_path) {
       fetchVideoToken(activeLesson.video_path);
     }
   }, [activeLesson]);
 
-  // ====== UI START ======
-
-  if (loading)
+  // ====== LOADING STATES ======
+  if (status === "loading" || loading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <Loader isLoading={true} className=""/>
+        <Loader isLoading={loading} />
       </div>
     );
+  }
 
-  if (!course)
+  if (!isEnrolled) {
     return (
-      <div className="flex justify-center items-center h-screen text-gray-500 dark:text-gray-400">
+      <div className="flex justify-center items-center h-screen text-gray-400">
+        Verifying enrollment...
+      </div>
+    );
+  }
+
+  if (!course) {
+    return (
+      <div className="flex justify-center items-center h-screen text-gray-400">
         Course not found.
       </div>
     );
+  }
 
+  // ====== UI ======
   return (
-    <div className="w-full sm:w-[85%] lg:w-[80%] mx-auto py-6 lg:py-10 grid grid-cols-1 lg:grid-cols-3 gap-8 text-gray-900 dark:text-gray-100">
-      {/* ===== LEFT COLUMN — Lessons ===== */}
-      <aside className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-[#1f1f1f] rounded-xl shadow-sm p-4 sm:p-5 h-fit lg:h-[80vh] overflow-y-auto">
-        <h1 className="text-lg sm:text-xl font-bold mb-3">{course.title}</h1>
-        <p className="text-gray-500 dark:text-gray-400 text-sm mb-5">{course.level}</p>
+    <div className="w-full mx-auto py-6 lg:py-10 flex flex-col lg:flex-row min-h-screen text-gray-900 dark:text-gray-100">
 
-        <div className="space-y-3">
-          {course.curriculum && course.curriculum.length > 0 ? (
-            course.curriculum.map((lesson, index) => (
-              <div
-                key={index}
-                onClick={() => setActiveLesson(lesson)}
-                className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
-                  activeLesson?.id === lesson.id
-                    ? "border-blue-500 bg-blue-50 dark:bg-neutral-800"
-                    : "border-gray-200 dark:border-[#1f1f1f] hover:bg-gray-50 dark:hover:bg-neutral-800"
-                }`}
-              >
-                <div className="flex items-center gap-x-3">
-                  <IconBook2
-                    size={18}
-                    className={`${
-                      activeLesson?.id === lesson.id
-                        ? "text-blue-500 dark:text-blue-400"
-                        : "text-gray-400"
-                    }`}
-                  />
-                  <span className="text-sm sm:text-base font-medium">
-                    {lesson.title}
-                  </span>
-                </div>
-                <IconPlayerPlay
-                  size={16}
-                  className={`${
-                    activeLesson?.id === lesson.id
-                      ? "text-blue-500 dark:text-blue-400"
-                      : "text-gray-400"
-                  }`}
+      {/* LEFT — Lessons */}
+      <aside className="w-full lg:w-1/3 p-4 overflow-y-auto lg:h-screen">
+        <h1 className="text-lg font-bold mb-2">{course.title}</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{course.level}</p>
+
+        <div className="space-y-2">
+          {course.curriculum.map((lesson) => (
+            <div
+              key={lesson.id}
+              onClick={() => setActiveLesson(lesson)}
+              className={`flex justify-between p-3 rounded-lg cursor-pointer transition ${
+                activeLesson?.id === lesson.id
+                  ? "bg-blue-50 dark:bg-neutral-800"
+                  : "hover:bg-gray-100 dark:hover:bg-neutral-800"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <IconBrandParsinta
+                  size={18}
+                  className={
+                    activeLesson?.id === lesson.id ? "text-blue-500" : "text-gray-400"
+                  }
                 />
+                <span className="text-sm">{lesson.title}</span>
               </div>
-            ))
-          ) : (
-            <p className="text-gray-500 dark:text-gray-400 text-sm">
-              No lessons available.
-            </p>
-          )}
+
+              <IconPlayerPlay
+                size={16}
+                className={
+                  activeLesson?.id === lesson.id ? "text-blue-500" : "text-gray-400"
+                }
+              />
+            </div>
+          ))}
         </div>
       </aside>
 
-      {/* ===== RIGHT COLUMN — Video Player ===== */}
-      <div className="lg:col-span-2 bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-[#1f1f1f] shadow-sm p-3 sm:p-5 flex flex-col justify-center">
+      {/* RIGHT — Video */}
+      <div className="w-full lg:w-2/3 p-4">
         <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
           {videoLoading ? (
             <div className="flex justify-center items-center h-full">
-              <Loader isLoading={true} className="" />
+              <Loader isLoading={videoLoading} />
             </div>
-          ) : activeLesson && videoToken ? (
-            <video
-              key={activeLesson.id}
-              controls
-              className="w-full h-full object-cover"
-            >
-              <source
-                src={`/api/videos/stream?token=${videoToken}`}
-                type="video/mp4"
-              />
-              Your browser does not support the video tag.
+          ) : videoToken ? (
+            <video controls autoPlay className="w-full h-full object-cover">
+              <source src={`/api/videos/stream?token=${videoToken}`} type="video/mp4" />
             </video>
           ) : (
-            <div className="flex flex-col justify-center items-center h-full text-gray-400">
-              <IconBrandYoutube size={48} />
-              <p className="mt-2 text-sm">Select a lesson to start watching</p>
+            <div className="flex flex-col justify-center items-center h-full text-gray-500">
+              <IconBrandYoutube size={50} />
+              <p className="text-sm mt-1">Loading lesson session...</p>
             </div>
           )}
         </div>
 
         {activeLesson && (
-          <div className="mt-4">
-            <h2 className="text-lg sm:text-xl font-semibold">{activeLesson.title}</h2>
-            <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base mt-1">
-              Duration: {activeLesson.length || "N/A"}
-            </p>
-          </div>
+          <h2 className="text-lg font-semibold mt-4">{activeLesson.title}</h2>
         )}
       </div>
     </div>
