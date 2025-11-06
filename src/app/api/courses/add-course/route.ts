@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // import { NextResponse } from "next/server";
 // import { db } from "@/lib/db";
 // import fs from "fs";
@@ -70,7 +71,7 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions)
     const user_id = session?.user?.id
-
+    
     if (!user_id) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 })
     }
