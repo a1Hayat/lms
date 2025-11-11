@@ -102,10 +102,6 @@ export function MenuUser({ user }: { user: User }) {
             Order History
           </DropdownMenuItem>
           <DropdownMenuItem>
-          <IconCreditCard className="mr-2 size-4" />
-          Billing
-        </DropdownMenuItem>
-          <DropdownMenuItem>
             <IconSettings className="mr-2 size-4" />
             Settings
           </DropdownMenuItem>

@@ -30,6 +30,7 @@ import {
 import Link from "next/link"
 import Image from "next/image"
 import logo from '@/components/icons/logo.png'
+import ProtectedRoute from "@/components/auth/protectedRoute"
 
 export const metadata: Metadata = {
   title: "Dashboard | CSWithBari",
@@ -59,101 +60,100 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-background">
-        <SidebarProvider>
-          <SidebarInset>
-            {/* 🧭 Top Navigation Bar */}
-            <header className="flex items-center justify-between h-16 border-b bg-background px-4 sm:px-6">
-              {/* LEFT: Logo + Desktop Menu */}
-              <div className="flex items-center gap-4">
-                {/* Mobile Hamburger Menu */}
-                <div className="md:hidden">
-                  <MobileMenu user={user} />
+        <ProtectedRoute allowedRoles={["student"]}>
+          <SidebarProvider>
+            <SidebarInset>
+              {/* 🧭 Top Navigation Bar */}
+              <header className="flex items-center justify-between h-16 border-b bg-background px-4 sm:px-6">
+                {/* LEFT: Logo + Desktop Menu */}
+                <div className="flex items-center gap-4">
+                  {/* Mobile Hamburger Menu */}
+                  <div className="md:hidden">
+                    <MobileMenu user={user} />
+                  </div>
+
+                  {/* Logo */}
+                  <Link href="/" className="flex items-center gap-2">
+                    <Image
+                      src={logo}
+                      alt="CSWithBari Logo"
+                      width={60}
+                      height={60}
+                      priority
+                      className="rounded-md select-none"
+                    />
+                  </Link>
+
+                  {/* Desktop Menubar */}
+                  
+                 
+
+                  <Menubar className="hidden md:flex bg-transparent border-none shadow-none">
+
+                     <MenubarMenu>
+                      <MenubarTrigger>Dashboard</MenubarTrigger>
+                      <MenubarContent>
+                        <MenubarItem asChild>
+                          <Link href="/dashboard">Home</Link>
+                        </MenubarItem>
+                      </MenubarContent>
+                    </MenubarMenu>
+                    <MenubarMenu>
+                      <MenubarTrigger>Courses</MenubarTrigger>
+                      <MenubarContent>
+                        <MenubarItem asChild>
+                          <Link href="/dashboard/my-courses">My Courses</Link>
+                        </MenubarItem>
+                        <MenubarItem asChild>
+                          <Link href="/dashboard/browse-courses">Browse Courses</Link>
+                        </MenubarItem>
+                      </MenubarContent>
+                    </MenubarMenu>
+
+                    <MenubarMenu>
+                      <MenubarTrigger>Resources</MenubarTrigger>
+                      <MenubarContent>
+                        <MenubarItem asChild>
+                          <Link href="/dashboard/my-resources">My Resources</Link>
+                        </MenubarItem>
+                        <MenubarItem asChild>
+                          <Link href="/dashboard/browse-resources">Browse Resources</Link>
+                        </MenubarItem>
+                      </MenubarContent>
+                    </MenubarMenu>
+
+                    <MenubarMenu>
+                      <MenubarTrigger>Bundles</MenubarTrigger>
+                      <MenubarContent>
+                        <MenubarItem asChild>
+                          <Link href="/dashboard/bundles">Browse</Link>
+                        </MenubarItem>
+                      </MenubarContent>
+                    </MenubarMenu>
+                    
+                  </Menubar>
                 </div>
 
-                {/* Logo */}
-                <Link href="/" className="flex items-center gap-2">
-                  <Image
-                    src={logo}
-                    alt="CSWithBari Logo"
-                    width={60}
-                    height={60}
-                    priority
-                    className="rounded-md select-none"
-                  />
-                </Link>
+                {/* CENTER: Greeting */}
+                <div className="absolute left-1/2 transform -translate-x-1/2 hidden md:flex items-center gap-2 text-sm">
+                  <Separator orientation="vertical" className="h-4" />
+                  
+                </div>
 
-                {/* Desktop Menubar */}
-                <Menubar className="hidden md:flex bg-transparent border-none shadow-none">
-                  <MenubarMenu>
-                    <MenubarTrigger>Courses</MenubarTrigger>
-                    <MenubarContent>
-                      <MenubarItem asChild>
-                        <Link href="/courses/enrolled">My Courses</Link>
-                      </MenubarItem>
-                      <MenubarItem asChild>
-                        <Link href="/courses/browse">Browse Courses</Link>
-                      </MenubarItem>
-                    </MenubarContent>
-                  </MenubarMenu>
+                {/* RIGHT: User Menu + Theme */}
+                <div className="flex items-center gap-4">
+                  <MenuUser user={user} />
+                  <ModeToggle />
+                </div>
+              </header>
 
-                  <MenubarMenu>
-                    <MenubarTrigger>Resources</MenubarTrigger>
-                    <MenubarContent>
-                      <MenubarItem asChild>
-                        <Link href="/resources/library">Library</Link>
-                      </MenubarItem>
-                      <MenubarItem asChild>
-                        <Link href="/resources/downloads">Browse Resources</Link>
-                      </MenubarItem>
-                    </MenubarContent>
-                  </MenubarMenu>
-
-                  <MenubarMenu>
-                    <MenubarTrigger>Purchased</MenubarTrigger>
-                    <MenubarContent>
-                      <MenubarItem asChild>
-                        <Link href="/purchased/courses">Courses</Link>
-                      </MenubarItem>
-                      <MenubarItem asChild>
-                        <Link href="/purchased/bundles">Bundles</Link>
-                      </MenubarItem>
-                    </MenubarContent>
-                  </MenubarMenu>
-
-                  <MenubarMenu>
-                    <MenubarTrigger>Explore</MenubarTrigger>
-                    <MenubarContent>
-                      <MenubarItem asChild>
-                        <Link href="/explore/all">All Courses</Link>
-                      </MenubarItem>
-                      <MenubarItem asChild>
-                        <Link href="/community">New Sessions</Link>
-                      </MenubarItem>
-                    </MenubarContent>
-                  </MenubarMenu>
-                </Menubar>
-              </div>
-
-              {/* CENTER: Greeting */}
-              <div className="absolute left-1/2 transform -translate-x-1/2 hidden md:flex items-center gap-2 text-sm">
-                <Separator orientation="vertical" className="h-4" />
-                
-              </div>
-
-              {/* RIGHT: User Menu + Theme */}
-              <div className="flex items-center gap-4">
-                <MenuUser user={user} />
-                <ModeToggle />
-              </div>
-            </header>
-
-            {/* 🌐 Main Page Content */}
-            <main className="flex flex-1 flex-col gap-4 p-6">
-              {children}
-            </main>
-          </SidebarInset>
-        </SidebarProvider>
-
+              {/* 🌐 Main Page Content */}
+              <main className="flex flex-1 flex-col gap-4 p-6">
+                {children}
+              </main>
+            </SidebarInset>
+          </SidebarProvider>
+        </ProtectedRoute>
       </body>
     </html>
   )

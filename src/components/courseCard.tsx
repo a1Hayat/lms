@@ -101,6 +101,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, showInstructor = false 
           </p>
         )}
       </div>
+      
     </div>
   );
 };
