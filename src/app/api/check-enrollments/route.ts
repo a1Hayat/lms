@@ -75,7 +75,6 @@ export async function POST(req: Request) {
     console.error("Check purchase error:", error);
 =======
     console.error("Purchase check error:", error);
->>>>>>> 6ad786e49aee854d19a6663a23e50c99a7d80348
     return NextResponse.json({ purchased: false, error: true });
   }
 }
