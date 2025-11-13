@@ -1,3 +1,4 @@
+// /app/api/videos/request-video/route.ts
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 
@@ -5,16 +6,12 @@ const VIDEO_SECRET = process.env.VIDEO_SECRET || "super_secret_key";
 
 export async function POST(req: Request) {
   try {
-    let { videoPath } = await req.json();
+    const { videoPath } = await req.json();
 
-    // Remove leading slash if present
-    if (videoPath.startsWith("/")) {
-      videoPath = videoPath.slice(1);
+    if (!videoPath) {
+      return NextResponse.json({ error: "No video path provided" }, { status: 400 });
     }
 
-    if (!videoPath.startsWith("uploads/")) {
-      return NextResponse.json({ error: "Invalid video path" }, { status: 403 });
-    }
     const token = jwt.sign({ videoPath }, VIDEO_SECRET, { expiresIn: "30m" });
 
     return NextResponse.json({ token });

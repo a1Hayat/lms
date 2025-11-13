@@ -21,7 +21,7 @@ import Image from "next/image"
 import { NavUser } from "./nav-users"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
-import { IconAdjustmentsCog, IconBook, IconBook2, IconBoxMultiple, IconBrandParsinta, IconCardboards, IconCreditCard, IconGauge, IconSchool } from "@tabler/icons-react"
+import { IconAdjustmentsCog, IconBook, IconBook2, IconBoxMultiple, IconBrandParsinta, IconCardboards, IconCreditCard, IconGauge, IconHistoryToggle, IconSchool } from "@tabler/icons-react"
 import { NavMain } from "./nav-main"
 import { Separator } from "./ui/separator"
 
@@ -115,17 +115,13 @@ const data = {
       ],
     },
     {
-      title: "Admin Controls",
+      title: "Orders History",
       url: "#",
-      icon: IconAdjustmentsCog,
+      icon: IconHistoryToggle,
       items: [
         {
-          title: "Manage Users",
-          url: "#",
-        },
-        {
-          title: "Add New",
-          url: "#",
+          title: "Cash Orders",
+          url: "/dashboard/admin/order",
         },
       ],
     },

@@ -25,7 +25,7 @@ const fetchBundles = async () => {
   setIsLoading(true);
 
   try {
-    const res = await fetch("/api/bundles/fetch-all");
+    const res = await fetch("/api/bundles/fetch");
     const data = await res.json();
     return data.bundles;
   } catch (err) {

@@ -14,6 +14,7 @@ import { session } from "../../../../types/sessions";
 import { data } from "../../../../types/sessions";
 import { CourseCardSkeletonRow } from "@/components/loadingSkeleton";
 import CourseGrid from "@/components/CourseGrid";
+import { resources } from "../../../../types/resources";
 
 export default function StudentDashboard() {
   const { data: session } = useSession();
@@ -22,7 +23,7 @@ export default function StudentDashboard() {
   const [isLoadingResources, setIsLoadingResources] = useState(false);
 
   const [CourseDetails, setCourseDetails] = useState<any[]>([]);
-  const [ResourceDetails, setResourceDetails] = useState<any[]>([]);
+  const [ResourceDetails, setResourceDetails] = useState<resources[]>([]);
 
   const [alert, setAlert] = useState({
     show: false,
@@ -133,7 +134,34 @@ export default function StudentDashboard() {
       isMounted = false;
     };
   }, [session?.user?.id]);
+ const handleViewResource = async (resource: any) => {
+    try {
+      const res = await fetch("/api/courses/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseId: resource.id }),
+      });
 
+      const data = await res.json();
+      if (data.token) window.location.href=`/dashboard/resources/${data.token}`;
+    } catch (err) {
+      console.error("Token error:", err);
+    }
+  };
+  const handleViewCourse = async (course: any) => {
+    try {
+      const res = await fetch("/api/courses/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseId: course.id }),
+      });
+
+      const data = await res.json();
+      if (data.token)window.location.href=(`/dashboard/courses/${data.token}`);
+    } catch (err) {
+      console.error("Token error:", err);
+    }
+  }
   // Loading state for both
   const loading = isLoadingCourses || isLoadingResources;
 
@@ -195,43 +223,81 @@ export default function StudentDashboard() {
           {/* Banner */}
           <Image src={banner} alt="banner" className="rounded-md dark:shadow-[#1f1f1f] shadow-lg" />
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-2 gap-5">
           {/* Courses Section */}
           <div className="rounded-lg p-4 flex-1">
-            <p className="font-bold mb-5">Your Courses</p>
-            {isLoadingCourses ? (
-              <CourseCardSkeletonRow />
-            ) : CourseDetails.length > 0 ? (
-              <CourseGrid
-                courses={CourseDetails}
-                columns={2}
-                showInstructor={false}
-                onCardClick={(course) => console.log("Clicked course:", course.title)}
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center py-10 text-gray-500">
-                No courses available.
+            <p className="font-bold mb-5">My Courses</p>
+           {loading ? (
+          <CourseCardSkeletonRow />
+        ) : CourseDetails.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 xl:grid-cols-1 gap-3">
+            {CourseDetails.map((resource) => (
+              <div
+                key={resource.id}
+                className="bg-white dark:bg-neutral-900 rounded-lg shadow hover:shadow-lg transition p-3 flex flex-col gap-2 min-h-[210px] cursor-pointer"
+                onClick={() => handleViewCourse(resource)}
+              >
+                <img
+                  src={resource.thumbnail || "/placeholder.jpg"}
+                  alt={resource.title}
+                  className="rounded-md h-32 w-full object-cover"
+                  
+                />
+
+                <h3 className="font-semibold text-sm line-clamp-2">
+                  {resource.title}
+                </h3>
+
+                <p className="text-xs text-gray-500">Rs {resource.price}</p>
+
+                <button className="bg-green-600 text-white text-xs py-1.5 rounded hover:bg-green-700 w-full mt-auto">
+                  Start
+                </button>
               </div>
-            )}
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-gray-500 mt-16">No resources found.</p>
+        )}
           </div>
 
           {/* Resources Section */}
-          <div className="rounded-lg p-4 flex-1 mt-4">
-            <p className="font-bold mb-5">Your Resources</p>
-            {isLoadingResources ? (
-              <CourseCardSkeletonRow />
-            ) : ResourceDetails.length > 0 ? (
-              <CourseGrid
-                courses={ResourceDetails}
-                columns={2}
-                showInstructor={false}
-                onCardClick={(res) => console.log("Clicked resource:", res.title)}
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center py-10 text-gray-500">
-                No resources available.
+          <div className="rounded-lg p-4 flex-1">
+            <p className="font-bold mb-5">My Resources</p>
+            {loading ? (
+          <CourseCardSkeletonRow />
+        ) : ResourceDetails.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 xl:grid-cols-1 gap-3">
+            {ResourceDetails.map((resource) => (
+              <div
+                key={resource.id}
+                className="bg-white dark:bg-neutral-900 rounded-lg shadow hover:shadow-lg transition p-3 flex flex-col gap-2 min-h-[210px] cursor-pointer"
+                onClick={() => handleViewResource(resource)}
+              >
+                <img
+                  src={resource.thumbnail || "/placeholder.jpg"}
+                  alt={resource.title}
+                  className="rounded-md h-32 w-full object-cover"
+                  
+                />
+
+                <h3 className="font-semibold text-sm line-clamp-2">
+                  {resource.title}
+                </h3>
+
+                <p className="text-xs text-gray-500">Rs {resource.price}</p>
+
+                <button className="bg-green-600 text-white text-xs py-1.5 rounded hover:bg-green-700 w-full mt-auto">
+                  Start
+                </button>
               </div>
-            )}
+            ))}
           </div>
+        ) : (
+          <p className="text-center text-gray-500 mt-16">No resources found.</p>
+        )}
+          </div>
+        </div>
         </div>
 
         {/* Right Column — Upcoming Sessions */}

@@ -204,7 +204,7 @@ export default function AddCourseForm() {
       if (values.thumbnail instanceof File) {
         const fd = new FormData()
         fd.append("file", values.thumbnail)
-        const res = await fetch("/api/uploads", { method: "POST", body: fd })
+        const res = await fetch("/api/uploads/thumbnails", { method: "POST", body: fd })
         const json = await res.json()
         thumbnailUrl = json.url
       }
@@ -215,7 +215,7 @@ export default function AddCourseForm() {
           if (l.file instanceof File) {
             const fd = new FormData()
             fd.append("file", l.file)
-            const res = await fetch("/api/uploads", { method: "POST", body: fd })
+            const res = await fetch("/api/uploads/lessons", { method: "POST", body: fd })
             const json = await res.json()
             return { ...l, uploadedUrl: json.url }
           }

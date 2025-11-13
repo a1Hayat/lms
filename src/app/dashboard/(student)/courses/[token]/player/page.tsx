@@ -130,7 +130,7 @@ export default function CoursePlayerPage() {
   if (status === "loading" || loading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <Loader isLoading={loading} />
+        <Loader isLoading={loading} className=""/>
       </div>
     );
   }
@@ -197,7 +197,7 @@ export default function CoursePlayerPage() {
         <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
           {videoLoading ? (
             <div className="flex justify-center items-center h-full">
-              <Loader isLoading={videoLoading} />
+              <Loader isLoading={videoLoading} className=""/>
             </div>
           ) : videoToken ? (
             <video

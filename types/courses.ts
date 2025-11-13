@@ -5,6 +5,7 @@ export type lesson = {
   title: string;
   length: string; // or "length", depending on your DB field
   video_path: string;
+   duration: number; // in seconds
 };
 
 export type courses = {

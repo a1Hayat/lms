@@ -99,11 +99,12 @@ export function MenuUser({ user }: { user: User }) {
         <DropdownMenuGroup>
            <DropdownMenuItem>
             <IconHistoryToggle className="mr-2 size-4" />
-            Order History
+            <button onClick={()=>window.location.href='/dashboard/orders'}>Order History</button>
           </DropdownMenuItem>
           <DropdownMenuItem>
             <IconSettings className="mr-2 size-4" />
-            Settings
+            <button onClick={()=>window.location.href='/dashboard/settings'}>Settings</button>
+
           </DropdownMenuItem>
           
          

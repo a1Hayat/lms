@@ -1,64 +1,78 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import mysql from "mysql2/promise";
+
+async function db() {
+  return await mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME,
+  });
+}
 
 export async function POST(req: Request) {
+  const conn = await db();
   try {
-    const { user_id } = await req.json();
+    const { user_id } = await req.json(); // This is the ID of the cashier
 
     if (!user_id) {
-      return NextResponse.json({ success: false, message: "Missing user_id" }, { status: 400 });
+      return NextResponse.json({ success: false, message: "User ID is required" }, { status: 400 });
     }
 
-    const [orders]: any = await db.query(`
+    // This query fetches all 'paid' 'cash' orders processed by the cashier (user_id)
+    // It also joins all necessary tables to get the student's name and the item's title.
+    const [rows]: any = await conn.execute(
+      `
       SELECT
         o.id AS order_id,
-        o.user_id,
         o.final_amount,
-        o.payment_status,
-        o.payment_method,
         o.created_at,
-        u.name AS user_name,
-        u.email AS user_email,
-        u.phone AS user_phone,
-        oi.course_id,
-        oi.resource_id,
         
-        CASE WHEN oi.course_id IS NOT NULL THEN c.title
-             WHEN oi.resource_id IS NOT NULL THEN r.title
-        END AS item_title,
-
-        CASE WHEN oi.course_id IS NOT NULL THEN 'course'
-             WHEN oi.resource_id IS NOT NULL THEN 'resource'
-        END AS item_type
+        -- Student's info
+        u.name AS student_name,
+        u.email AS student_email,
+        
+        -- Get the item title
+        COALESCE(b.title, c.title, r.title) AS item_title
 
       FROM orders o
-      JOIN users u ON o.user_id = u.id
-      JOIN order_items oi ON oi.order_id = o.id
+      -- Join for Student Info (the one who bought the item)
+      JOIN users u ON o.user_id = u.id 
+      -- Join for Item Info
+      JOIN order_items oi ON o.id = oi.order_id
+      LEFT JOIN bundles b ON oi.bundle_id = b.id
       LEFT JOIN courses c ON oi.course_id = c.id
       LEFT JOIN resources r ON oi.resource_id = r.id
-      WHERE o.payment_method = 'cash'
-        AND o.processed_by = ?
-      ORDER BY o.id DESC
-    `, [user_id]);
 
-    const formatted = orders.map((o: any) => ({
-      order_id: o.order_id,
-      item_title: o.item_title,
-      item_type: o.item_type,
-      final_amount: o.final_amount,
-      payment_status: o.payment_status,
-      created_at: o.created_at,
+      WHERE 
+        o.processed_by = ?  -- Filter by the cashier's ID
+        AND o.payment_status = 'paid'
+        AND o.payment_method = 'cash'
+
+      ORDER BY
+        o.created_at DESC
+    `,
+      [user_id]
+    );
+
+    // Format the response to match what the frontend expects
+    const orders = rows.map((row: any) => ({
+      order_id: row.order_id,
+      final_amount: row.final_amount,
+      created_at: row.created_at,
       user: {
-        name: o.user_name,
-        email: o.user_email,
-        phone: o.user_phone,
+        name: row.student_name,
+        email: row.student_email,
       },
+      item_title: row.item_title,
     }));
 
-    return NextResponse.json({ success: true, orders: formatted });
+    return NextResponse.json({ success: true, orders: orders });
 
-  } catch (err: any) {
-    console.error("Fetch cash orders error:", err);
-    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+  } catch (error) {
+    console.error("Fetch cash orders error:", error);
+    return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });
+  } finally {
+    conn.end();
   }
 }

@@ -1,7 +1,17 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import mysql from "mysql2/promise";
+
+async function db() {
+  return await mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME,
+  });
+}
 
 export async function POST(req: Request) {
+  const conn = await db();
   try {
     const { order_id } = await req.json();
 
@@ -9,57 +19,69 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "Order ID is required" }, { status: 400 });
     }
 
-    const [orderRows]: any = await db.query(
-      `SELECT 
-          o.id,
-          o.final_amount,
-          o.payment_status,
-          o.user_id,
-          u.name AS user_name,
-          u.email AS user_email,
-          u.phone AS user_phone,
-          oi.course_id,
-          oi.resource_id,
-          c.title AS course_title,
-          r.title AS resource_title
-       FROM orders o
-       JOIN users u ON u.id = o.user_id
-       JOIN order_items oi ON oi.order_id = o.id
-       LEFT JOIN courses c ON c.id = oi.course_id
-       LEFT JOIN resources r ON r.id = oi.resource_id
-       WHERE o.id = ?`,
+    // This query joins all necessary tables to get the order,
+    // the user, and the specific item title/type.
+    const [rows]: any = await conn.execute(
+      `
+      SELECT
+        o.id, 
+        o.final_amount, 
+        o.payment_status,
+        u.name, 
+        u.email, 
+        u.phone,
+        
+        -- Determine item type
+        CASE
+          WHEN oi.bundle_id IS NOT NULL THEN 'Bundle'
+          WHEN oi.course_id IS NOT NULL THEN 'Course'
+          WHEN oi.resource_id IS NOT NULL THEN 'Resource'
+          ELSE 'Unknown'
+        END AS item_type,
+        
+        -- Get the title from whichever table has it
+        COALESCE(b.title, c.title, r.title) AS item_title
+
+      FROM orders o
+      JOIN users u ON o.user_id = u.id
+      JOIN order_items oi ON o.id = oi.order_id
+      LEFT JOIN bundles b ON oi.bundle_id = b.id
+      LEFT JOIN courses c ON oi.course_id = c.id
+      LEFT JOIN resources r ON oi.resource_id = r.id
+      WHERE o.id = ?
+      LIMIT 1
+    `,
       [order_id]
     );
 
-    if (!orderRows || orderRows.length === 0) {
+    if (!rows.length) {
       return NextResponse.json({ success: false, message: "Order not found" });
     }
 
-    const row = orderRows[0];
+    const row = rows[0];
 
-    // Determine item type
-    let item = null;
-    if (row.course_id) item = { type: "course", id: row.course_id, title: row.course_title };
-    if (row.resource_id) item = { type: "resource", id: row.resource_id, title: row.resource_title };
-
-    return NextResponse.json({
-      success: true,
-      order: {
-        id: row.id,
-        final_amount: row.final_amount,
-        payment_status: row.payment_status,
-        user: {
-          id: row.user_id,
-          name: row.user_name,
-          email: row.user_email,
-          phone: row.user_phone,
-        },
-        item,
+    // Format the response to match what the frontend expects
+    const orderDetails = {
+      id: row.id,
+      final_amount: row.final_amount,
+      payment_status: row.payment_status,
+      user: {
+        name: row.name,
+        email: row.email,
+        phone: row.phone,
       },
-    });
+      item: {
+        type: row.item_type,
+        title: row.item_title,
+      }
+    };
 
-  } catch (e) {
-    console.error("Order Fetch Error:", e);
+    return NextResponse.json({ success: true, order: orderDetails });
+
+  } catch (error) {
+    console.error("Fetch order error:", error);
     return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });
+  } finally {
+    conn.end();
   }
 }

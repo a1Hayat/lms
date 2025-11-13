@@ -52,17 +52,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Invalid or expired token" }, { status: 403 });
   }
 }
-
-//front end
-/* async function playVideo(videoPath: string) {
-  const res = await fetch("/api/video/request", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ videoPath }),
-  });
-  const { token } = await res.json();
-
-  const videoElement = document.getElementById("lessonVideo") as HTMLVideoElement;
-  videoElement.src = `/api/video/stream?token=${token}`;
-  videoElement.play();
-} */

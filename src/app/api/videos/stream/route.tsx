@@ -1,17 +1,16 @@
-export const runtime = "nodejs"; // Important!
-
+// app/api/videos/stream/route.ts
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import jwt from "jsonwebtoken";
 
+export const runtime = "nodejs";
 const VIDEO_SECRET = process.env.VIDEO_SECRET || "super_secret_key";
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const token = searchParams.get("token");
-
     if (!token) return NextResponse.json({ error: "Missing token" }, { status: 400 });
 
     let decoded: any;
@@ -21,10 +20,18 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Invalid or expired token" }, { status: 403 });
     }
 
-    const videoPath = decoded.videoPath;
+    let videoPath = decoded.videoPath;
     if (!videoPath) return NextResponse.json({ error: "No video path provided" }, { status: 400 });
 
-    const absolutePath = path.join(process.cwd(), "public", videoPath);
+    // ✅ Remove leading slash if present
+    if (videoPath.startsWith("/")) videoPath = videoPath.slice(1);
+
+    // ✅ Remove leading secure_uploads/lessons if it exists
+    if (videoPath.startsWith("secure_uploads/lessons/")) {
+      videoPath = videoPath.replace("secure_uploads/lessons/", "");
+    }
+
+    const absolutePath = path.join(process.cwd(), "secure_uploads", "lessons", videoPath);
 
     if (!fs.existsSync(absolutePath)) {
       return NextResponse.json({ error: "Video not found" }, { status: 404 });
@@ -48,7 +55,6 @@ export async function GET(req: Request) {
 
       const chunkSize = end - start + 1;
       const file = fs.createReadStream(absolutePath, { start, end });
-
       const headers = {
         "Content-Range": `bytes ${start}-${end}/${fileSize}`,
         "Accept-Ranges": "bytes",
@@ -60,17 +66,18 @@ export async function GET(req: Request) {
       return new Response(file as any, { status: 206, headers });
     }
 
-    // No range header — send full file
+    // Full file
     const file = fs.createReadStream(absolutePath);
-    const headers = {
-      "Content-Length": fileSize.toString(),
-      "Content-Type": "video/mp4",
-      "Cache-Control": "no-store",
-    };
-
-    return new Response(file as any, { status: 200, headers });
-  } catch (error) {
-    console.error("Streaming error:", error);
+    return new Response(file as any, {
+      status: 200,
+      headers: {
+        "Content-Length": fileSize.toString(),
+        "Content-Type": "video/mp4",
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch (err) {
+    console.error("Streaming error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

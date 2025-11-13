@@ -126,7 +126,7 @@ export default async function RootLayout({
                       <MenubarTrigger>Bundles</MenubarTrigger>
                       <MenubarContent>
                         <MenubarItem asChild>
-                          <Link href="/dashboard/bundles">Browse</Link>
+                          <Link href="/dashboard/browse-bundles">Browse</Link>
                         </MenubarItem>
                       </MenubarContent>
                     </MenubarMenu>
@@ -173,29 +173,30 @@ function MobileMenu({ user }: { user: any }) {
             <p className="">Menu</p>
           <Separator/>
           <Link
-            href="/courses"
+            href="/dashboard"
+            className="flex items-center gap-2 hover:text-primary"
+          >
+            <IconCompass size={18} /> Dashboard
+          </Link>
+          <Link
+            href="/dashboard/browse-courses"
             className="flex items-center gap-2 hover:text-primary"
           >
             <IconBrandParsinta size={18} /> Courses
           </Link>
           <Link
-            href="/resources"
+            href="/dashboard/browse-resources"
             className="flex items-center gap-2 hover:text-primary"
           >
             <IconBook2 size={18} /> Resources
           </Link>
           <Link
-            href="/purchased"
+            href="/dashboard/browse-bundles"
             className="flex items-center gap-2 hover:text-primary"
           >
-            <IconShoppingBag size={18} /> Purchased
+            <IconShoppingBag size={18} /> Bundles
           </Link>
-          <Link
-            href="/explore"
-            className="flex items-center gap-2 hover:text-primary"
-          >
-            <IconCompass size={18} /> Explore
-          </Link>
+          
         </div>
       </SheetContent>
     </Sheet>
