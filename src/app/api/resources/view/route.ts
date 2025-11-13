@@ -12,9 +12,10 @@ export async function POST(req: Request) {
 
     if (!payload.filePath) return NextResponse.json({ success: false, message: "Invalid token payload" }, { status: 400 });
 
-    const filePath = path.join(process.cwd(), "secure_uploads", payload.filePath);
+    const filePath = path.join(process.cwd(), payload.filePath);
 
     if (!fs.existsSync(filePath)) {
+      console.log(filePath)
       return NextResponse.json({ success: false, message: "File not found" }, { status: 404 });
     }
 
