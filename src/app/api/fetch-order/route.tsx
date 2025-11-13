@@ -31,24 +31,17 @@ export async function POST(req: Request) {
       [order_id]
     );
 
-<<<<<<< HEAD
-    if (!Array.isArray(orderRows) || orderRows.length === 0) {
-=======
     if (!orderRows || orderRows.length === 0) {
->>>>>>> 6ad786e49aee854d19a6663a23e50c99a7d80348
       return NextResponse.json({ success: false, message: "Order not found" });
     }
 
     const row = orderRows[0];
 
-<<<<<<< HEAD
-=======
     // Determine item type
     let item = null;
     if (row.course_id) item = { type: "course", id: row.course_id, title: row.course_title };
     if (row.resource_id) item = { type: "resource", id: row.resource_id, title: row.resource_title };
 
->>>>>>> 6ad786e49aee854d19a6663a23e50c99a7d80348
     return NextResponse.json({
       success: true,
       order: {
@@ -56,22 +49,6 @@ export async function POST(req: Request) {
         final_amount: row.final_amount,
         payment_status: row.payment_status,
         user: {
-<<<<<<< HEAD
-          name: row.name,
-          email: row.email,
-          phone: row.phone,
-          id: row.user_id
-        },
-        course: {
-          title: row.title,
-          id: row.course_id
-        }
-      }
-    });
-  } catch (e) {
-    console.error(e);
-    return NextResponse.json({ success: false, message: "Server error" });
-=======
           id: row.user_id,
           name: row.user_name,
           email: row.user_email,
@@ -84,6 +61,5 @@ export async function POST(req: Request) {
   } catch (e) {
     console.error("Order Fetch Error:", e);
     return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });
->>>>>>> 6ad786e49aee854d19a6663a23e50c99a7d80348
   }
 }

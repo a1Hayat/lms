@@ -122,8 +122,6 @@ export default async function RootLayout({
                       </MenubarContent>
                     </MenubarMenu>
 
-<<<<<<< HEAD
-=======
                     <MenubarMenu>
                       <MenubarTrigger>Bundles</MenubarTrigger>
                       <MenubarContent>
@@ -133,7 +131,6 @@ export default async function RootLayout({
                       </MenubarContent>
                     </MenubarMenu>
                     
->>>>>>> 6ad786e49aee854d19a6663a23e50c99a7d80348
                   </Menubar>
                 </div>
 

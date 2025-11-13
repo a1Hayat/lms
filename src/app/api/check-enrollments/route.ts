@@ -71,9 +71,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ purchased: false });
 
   } catch (error) {
-<<<<<<< HEAD
-    console.error("Check purchase error:", error);
-=======
     console.error("Purchase check error:", error);
     return NextResponse.json({ purchased: false, error: true });
   }

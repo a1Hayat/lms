@@ -43,25 +43,6 @@ export async function POST(req: Request) {
       userId = newUser.insertId;
     }
 
-<<<<<<< HEAD
-    // ✅ Fetch Price
-    const table = type === "course" ? "courses" : "resources";
-    const [itemRows]: any = await conn.execute(
-      `SELECT price FROM ${table} WHERE id = ? LIMIT 1`,
-      [id]
-    );
-
-    if (itemRows.length === 0) {
-      return NextResponse.json({ message: "Item not found" }, { status: 404 });
-    }
-
-    const price = Number(itemRows[0].price);
-
-    // ✅ Create Order
-    const [orderResult]: any = await conn.execute(
-      `INSERT INTO orders (user_id, total_amount, discount_amount, final_amount, payment_method, payment_status)
-      VALUES (?, ?, 0, ?, 'cash', 'pending')`,
-=======
     // ✅ Fetch price depending on type
     let price = 0;
 
@@ -99,7 +80,6 @@ export async function POST(req: Request) {
     const [orderResult]: any = await conn.execute(
       `INSERT INTO orders (user_id, total_amount, discount_amount, final_amount, payment_method, payment_status)
        VALUES (?, ?, 0, ?, 'cash', 'pending')`,
->>>>>>> 6ad786e49aee854d19a6663a23e50c99a7d80348
       [userId, price, price]
     );
 
