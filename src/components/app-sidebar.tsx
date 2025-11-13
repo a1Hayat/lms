@@ -21,7 +21,7 @@ import Image from "next/image"
 import { NavUser } from "./nav-users"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
-import { IconAdjustmentsCog, IconBook, IconBook2, IconBrandParsinta, IconCardboards, IconCreditCard, IconGauge, IconSchool } from "@tabler/icons-react"
+import { IconAdjustmentsCog, IconBook, IconBook2, IconBoxMultiple, IconBrandParsinta, IconCardboards, IconCreditCard, IconGauge, IconSchool } from "@tabler/icons-react"
 import { NavMain } from "./nav-main"
 import { Separator } from "./ui/separator"
 
@@ -39,7 +39,7 @@ const data = {
     url: "/dasboard/admin",
     icon: IconGauge,
     items: [
-      { title: "Home", url: "#" },
+      { title: "Home", url: "/dashboard/admin" },
     ],
   },
   {
@@ -76,11 +76,26 @@ const data = {
       items: [
         {
           title: "Resources",
-          url: "#",
+          url: "/dashboard/admin/resources",
         },
         {
           title: "Add New",
-          url: "#",
+          url: "/dashboard/admin/resources/add",
+        },
+      ],
+    },
+    {
+      title: "Manage Bundles",
+      url: "#",
+      icon: IconBoxMultiple,
+      items: [
+        {
+          title: "Bundles",
+          url: "/dashboard/admin/bundles",
+        },
+        {
+          title: "Add New",
+          url: "/dashboard/admin/add_bundle",
         },
       ],
     },

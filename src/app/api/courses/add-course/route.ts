@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // import { NextResponse } from "next/server";
 // import { db } from "@/lib/db";
@@ -63,6 +64,8 @@
 // }
 
 
+=======
+>>>>>>> 6ad786e49aee854d19a6663a23e50c99a7d80348
 import {db} from "@/lib/db"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../../auth/[...nextauth]/route"

@@ -72,14 +72,14 @@ export default function CashPortalPage() {
         setAlert({
           show: true,
           type: "error",
-          title: "Failed ❌",
+          title: "Failed ",
           description: data.message,
         });
       } else {
         setAlert({
           show: true,
           type: "success",
-          title: "Payment Verified ✅",
+          title: "Payment Verified",
           description: "Student enrolled successfully.",
         });
         setOrder(null);
@@ -120,6 +120,7 @@ export default function CashPortalPage() {
         </Button>
       </div>
 
+<<<<<<< HEAD
       {order && (
         <div className="border rounded-lg p-4 bg-gray-50 dark:bg-neutral-900 space-y-2 mt-4">
           <p><b>Order ID:</b> {order.id}</p>
@@ -127,6 +128,18 @@ export default function CashPortalPage() {
           <p><b>Email:</b> {order.user.email}</p>
           <p><b>Phone:</b> {order.user.phone}</p>
           <p><b>Item:</b> {order.item}</p>
+=======
+     {order && (
+        <div className="border rounded-lg p-4 bg-gray-50 dark:bg-neutral-900 space-y-2 mt-4">
+          <p><b>Order ID:</b> {order.id}</p>
+          <p><b>Student:</b> {order.user?.name}</p>
+          <p><b>Email:</b> {order.user?.email}</p>
+          <p><b>Phone:</b> {order.user?.phone}</p>
+
+          <p><b>Item Type:</b> {order.item?.type}</p>
+          <p><b>Item Title:</b> {order.item?.title}</p>
+
+>>>>>>> 6ad786e49aee854d19a6663a23e50c99a7d80348
           <p><b>Amount:</b> Rs {order.final_amount}</p>
           <p><b>Status:</b> {order.payment_status}</p>
 
@@ -141,6 +154,10 @@ export default function CashPortalPage() {
           )}
         </div>
       )}
+<<<<<<< HEAD
+=======
+
+>>>>>>> 6ad786e49aee854d19a6663a23e50c99a7d80348
     </div>
   );
 }

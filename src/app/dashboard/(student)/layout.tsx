@@ -114,14 +114,26 @@ export default async function RootLayout({
                       <MenubarTrigger>Resources</MenubarTrigger>
                       <MenubarContent>
                         <MenubarItem asChild>
-                          <Link href="/resources/library">Library</Link>
+                          <Link href="/dashboard/my-resources">My Resources</Link>
                         </MenubarItem>
                         <MenubarItem asChild>
-                          <Link href="/resources/downloads">Browse Resources</Link>
+                          <Link href="/dashboard/browse-resources">Browse Resources</Link>
                         </MenubarItem>
                       </MenubarContent>
                     </MenubarMenu>
 
+<<<<<<< HEAD
+=======
+                    <MenubarMenu>
+                      <MenubarTrigger>Bundles</MenubarTrigger>
+                      <MenubarContent>
+                        <MenubarItem asChild>
+                          <Link href="/dashboard/bundles">Browse</Link>
+                        </MenubarItem>
+                      </MenubarContent>
+                    </MenubarMenu>
+                    
+>>>>>>> 6ad786e49aee854d19a6663a23e50c99a7d80348
                   </Menubar>
                 </div>
 

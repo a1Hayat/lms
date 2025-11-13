@@ -10,6 +10,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { ModeToggle } from "@/components/modeToogle";
+import ProtectedRoute from "@/components/auth/protectedRoute";
 
 export const metadata: Metadata = {
   title: "Admin Dashboard | CSWithBari",
@@ -26,6 +27,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body>
+        <ProtectedRoute allowedRoles={["admin"]}>
         <SidebarProvider>
           {/* Sidebar (Persistent across all dashboard pages) */}
           <AppSidebar />
@@ -50,6 +52,7 @@ export default async function RootLayout({
             </main>
           </SidebarInset>
         </SidebarProvider>
+        </ProtectedRoute>
       </body>
     </html>
   );

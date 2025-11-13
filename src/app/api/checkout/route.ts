@@ -14,13 +14,14 @@ export async function POST(req: Request) {
   const conn = await db();
 
   try {
-    const { name, email, phone, id, type } = await req.json();
+    const { id, type, name, email, phone } = await req.json();
 
     if (!id || !type) {
-      return NextResponse.json({ message: "Missing course/resource data" }, { status: 400 });
+      return NextResponse.json({ message: "Missing required data" }, { status: 400 });
     }
 
-    if (!["course", "resource"].includes(type)) {
+    // ✅ Validate type
+    if (!["course", "resource", "bundle"].includes(type)) {
       return NextResponse.json({ message: "Invalid type" }, { status: 400 });
     }
 
@@ -42,6 +43,7 @@ export async function POST(req: Request) {
       userId = newUser.insertId;
     }
 
+<<<<<<< HEAD
     // ✅ Fetch Price
     const table = type === "course" ? "courses" : "resources";
     const [itemRows]: any = await conn.execute(
@@ -59,19 +61,66 @@ export async function POST(req: Request) {
     const [orderResult]: any = await conn.execute(
       `INSERT INTO orders (user_id, total_amount, discount_amount, final_amount, payment_method, payment_status)
       VALUES (?, ?, 0, ?, 'cash', 'pending')`,
+=======
+    // ✅ Fetch price depending on type
+    let price = 0;
+
+    if (type === "course") {
+      const [rows]: any = await conn.execute(
+        "SELECT price FROM courses WHERE id = ? LIMIT 1",
+        [id]
+      );
+      if (!rows.length) return NextResponse.json({ message: "Course not found" }, { status: 404 });
+
+      price = Number(rows[0].price);
+    }
+
+    if (type === "resource") {
+      const [rows]: any = await conn.execute(
+        "SELECT price FROM resources WHERE id = ? LIMIT 1",
+        [id]
+      );
+      if (!rows.length) return NextResponse.json({ message: "Resource not found" }, { status: 404 });
+
+      price = Number(rows[0].price);
+    }
+
+    if (type === "bundle") {
+      const [rows]: any = await conn.execute(
+        "SELECT discount_price FROM bundles WHERE id = ? LIMIT 1",
+        [id]
+      );
+      if (!rows.length) return NextResponse.json({ message: "Bundle not found" }, { status: 404 });
+
+      price = Number(rows[0].discount_price);
+    }
+
+    // ✅ Create order (payment gateway will update status later)
+    const [orderResult]: any = await conn.execute(
+      `INSERT INTO orders (user_id, total_amount, discount_amount, final_amount, payment_method, payment_status)
+       VALUES (?, ?, 0, ?, 'cash', 'pending')`,
+>>>>>>> 6ad786e49aee854d19a6663a23e50c99a7d80348
       [userId, price, price]
     );
 
     const orderId = orderResult.insertId;
 
+<<<<<<< HEAD
     // ✅ Create Order Item
     await conn.execute(
       `INSERT INTO order_items (order_id, course_id, resource_id, price)
        VALUES (?, ?, ?, ?)`,
+=======
+    // ✅ Insert into order_items
+    await conn.execute(
+      `INSERT INTO order_items (order_id, course_id, resource_id, price)
+      VALUES (?, ?, ?, ?)`,
+>>>>>>> 6ad786e49aee854d19a6663a23e50c99a7d80348
       [
         orderId,
         type === "course" ? id : null,
         type === "resource" ? id : null,
+<<<<<<< HEAD
         price
       ]
     );
@@ -79,11 +128,26 @@ export async function POST(req: Request) {
     return NextResponse.json({
       message: "Order placed successfully. Pay cash to activate.",
       orderId
+=======
+        price,
+      ]
+    );
+
+
+    return NextResponse.json({
+      success: true,
+      message: "Order created successfully. Proceed to payment.",
+      orderId,
+>>>>>>> 6ad786e49aee854d19a6663a23e50c99a7d80348
     });
 
   } catch (error) {
     console.error(error);
+<<<<<<< HEAD
     return NextResponse.json({ message: "Server error" }, { status: 500 });
+=======
+    return NextResponse.json({ message: "Server error", error }, { status: 500 });
+>>>>>>> 6ad786e49aee854d19a6663a23e50c99a7d80348
   } finally {
     conn.end();
   }

@@ -200,7 +200,14 @@ export default function CoursePlayerPage() {
               <Loader isLoading={videoLoading} />
             </div>
           ) : videoToken ? (
-            <video controls autoPlay className="w-full h-full object-cover">
+            <video
+              controls
+              autoPlay
+              controlsList="nodownload noremoteplayback"
+              disablePictureInPicture
+              onContextMenu={(e) => e.preventDefault()}
+              className="w-full h-full object-cover"
+            >
               <source src={`/api/videos/stream?token=${videoToken}`} type="video/mp4" />
             </video>
           ) : (
