@@ -10,6 +10,9 @@ import {
   TodayOrder,
 } from "@/components/dashboardOrders/columns";
 import { TodayOrdersDataTable } from "@/components/dashboardOrders/data-table";
+import { contact_submission } from "../../../../types/contact-submissions";
+import { TodayContactDataTable } from "@/components/contact-subm/data-table";
+import { Contactcolumns } from "@/components/contact-subm/columns";
 
 // Define types
 type Stats = {
@@ -28,6 +31,7 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [todayOrders, setTodayOrders] = useState<TodayOrder[]>([]);
+  const [todaySubmissions, setTodaySubmissions] = useState<contact_submission[]>([])
   const [alert, setAlert] = useState({
     show: false,
     type: "error" as "success" | "error" | "warning" | "info",
@@ -47,6 +51,8 @@ export default function AdminDashboardPage() {
         setStats(data.stats);
         setChartData(data.chartData);
         setTodayOrders(data.todayOrders);
+        setTodaySubmissions(data.todaySubmissions)  // ✅ Correct
+
       } catch (err: any) {
         setAlert({
           show: true,
@@ -84,7 +90,12 @@ export default function AdminDashboardPage() {
 
       {/* Today's Orders Table */}
       
-        <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+        <h2 className="font-semibold mb-4 text-black dark:text-white">
+          Today's Contact Submissions
+        </h2>
+        <TodayContactDataTable columns={Contactcolumns} data={todaySubmissions} />
+
+        <h2 className="font-semibold mb-4 text-black dark:text-white">
           Today's Orders
         </h2>
         <TodayOrdersDataTable columns={columns} data={todayOrders} />

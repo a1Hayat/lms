@@ -21,7 +21,7 @@ import Image from "next/image"
 import { NavUser } from "./nav-users"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
-import { IconAdjustmentsCog, IconBook, IconBook2, IconBoxMultiple, IconBrandParsinta, IconCardboards, IconCreditCard, IconGauge, IconHistoryToggle, IconSchool } from "@tabler/icons-react"
+import { IconAdjustmentsCog, IconBook, IconBook2, IconBoxMultiple, IconBrandParsinta, IconCardboards, IconCreditCard, IconGauge, IconHistoryToggle, IconMessagePause, IconSchool } from "@tabler/icons-react"
 import { NavMain } from "./nav-main"
 import { Separator } from "./ui/separator"
 
@@ -160,7 +160,13 @@ export async function AppSidebar({ ...props }: React.ComponentProps<typeof Sideb
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={data.navMain}/>
+          <SidebarMenuButton asChild className="px-4">
+              <a href='/dashboard/admin/submissions'>
+                <IconMessagePause />
+                <span>Contact Submissions</span>
+              </a>
+            </SidebarMenuButton>
       </SidebarContent>
       
       <SidebarFooter>
