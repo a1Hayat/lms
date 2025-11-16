@@ -18,7 +18,7 @@ import logo from "@/components/icons/logo_short.png"
 
 export function Navbar() {
   const navLinks = [
-    { href: "#home", label: "Home" },
+    { href: "/", label: "Home" },
     { href: "#about", label: "About Us" },
     { href: "/contact", label: "Contact" },
   ]
