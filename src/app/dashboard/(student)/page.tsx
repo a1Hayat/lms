@@ -1,29 +1,99 @@
 "use client";
 
-import ProtectedRoute from "@/components/auth/protectedRoute";
-import Loader from "@/components/loader";
-import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import banner from "@/components/images/banners/banner-1.jpg";
-import Image from "next/image";
+import ProtectedRoute from "@/components/auth/protectedRoute";
+import Loader from "@/components/loader";
 import RoundProgress from "@/components/roundProgress";
-import { SessionDataTable } from "./data-table";
-import { upcoming_session } from "./columns";
-import { session } from "../../../../types/sessions";
-import { data } from "../../../../types/sessions";
 import { CourseCardSkeletonRow } from "@/components/loadingSkeleton";
-import CourseGrid from "@/components/CourseGrid";
+import { AiAgentComingSoon } from "@/components/ai-coming-soon";
+import { AiAgentAlert } from "@/components/ai-agent-alert";
 import { resources } from "../../../../types/resources";
 
+// --------------------------------------------
+// Reusable List Component
+// --------------------------------------------
+function ItemList({
+  title,
+  items,
+  loading,
+  onClick,
+  viewMoreLink,
+}: {
+  title: string;
+  items: any[];
+  loading: boolean;
+  onClick: (item: any) => void;
+  viewMoreLink: string;
+}) {
+  const MAX_ITEMS = 3;
+  const visibleItems = items.slice(0, MAX_ITEMS);
+
+  return (
+    <div className="rounded-lg p-5 min-h-[300px]">
+      <p className="font-bold mb-5">{title}</p>
+
+      {loading ? (
+        <CourseCardSkeletonRow />
+      ) : items.length > 0 ? (
+        <>
+          <div className="grid grid-cols-1 gap-3">
+            {visibleItems.map((item) => (
+              <div
+                key={item.id}
+                className="bg-white dark:bg-neutral-900 rounded-lg shadow hover:shadow-lg transition p-3 flex flex-col gap-2 min-h-[210px] cursor-pointer"
+                onClick={() => onClick(item)}
+              >
+                <img
+                  src={item.thumbnail || "/placeholder.jpg"}
+                  alt={item.title}
+                  className="rounded-md h-32 w-full object-cover"
+                />
+
+                <h3 className="font-semibold text-sm line-clamp-2">
+                  {item.title}
+                </h3>
+
+                <p className="text-xs text-gray-500">Rs {item.price}</p>
+
+                <button className="bg-green-600 text-white text-xs py-1.5 rounded hover:bg-green-700 w-full mt-auto">
+                  Start
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Show "View More" only when >3 items */}
+          {items.length > MAX_ITEMS && (
+            <a
+              href={viewMoreLink}
+              className="block mt-4 text-center text-sm text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+            >
+              View More →
+            </a>
+          )}
+        </>
+      ) : (
+        <p className="text-center text-gray-500 mt-16">No data found.</p>
+      )}
+    </div>
+  );
+}
+
+
+// --------------------------------------------
+// Main Component
+// --------------------------------------------
 export default function StudentDashboard() {
   const { data: session } = useSession();
 
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [isLoadingResources, setIsLoadingResources] = useState(false);
 
-  const [CourseDetails, setCourseDetails] = useState<any[]>([]);
-  const [ResourceDetails, setResourceDetails] = useState<resources[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [resourcesList, setResourcesList] = useState<resources[]>([]);
+
+  const loading = isLoadingCourses || isLoadingResources;
 
   const [alert, setAlert] = useState({
     show: false,
@@ -32,7 +102,9 @@ export default function StudentDashboard() {
     description: "",
   });
 
-  // ✅ Fetch enrolled courses
+  // --------------------------------------------
+  // Fetch Courses
+  // --------------------------------------------
   const fetchCourses = async () => {
     try {
       setIsLoadingCourses(true);
@@ -45,25 +117,15 @@ export default function StudentDashboard() {
       });
 
       const data = await res.json();
-
-      if (!data.success) {
-        setAlert({
-          show: true,
-          type: "error",
-          title: "Error",
-          description: "Failed to load your courses",
-        });
-        return [];
-      }
+      if (!data.success) throw new Error("Courses fetch failed");
 
       return data.courses;
     } catch (err) {
-      console.error("Failed to fetch courses:", err);
       setAlert({
         show: true,
         type: "error",
-        title: "Server Error",
-        description: "Please try again later.",
+        title: "Error",
+        description: "Failed to load your courses",
       });
       return [];
     } finally {
@@ -71,7 +133,9 @@ export default function StudentDashboard() {
     }
   };
 
-  // ✅ Fetch enrolled resources
+  // --------------------------------------------
+  // Fetch Resources
+  // --------------------------------------------
   const fetchResources = async () => {
     try {
       setIsLoadingResources(true);
@@ -84,25 +148,15 @@ export default function StudentDashboard() {
       });
 
       const data = await res.json();
-
-      if (!data.success) {
-        setAlert({
-          show: true,
-          type: "error",
-          title: "Error",
-          description: "Failed to load your resources",
-        });
-        return [];
-      }
+      if (!data.success) throw new Error("Resources fetch failed");
 
       return data.resources;
     } catch (err) {
-      console.error("Failed to fetch resources:", err);
       setAlert({
         show: true,
         type: "error",
-        title: "Server Error",
-        description: "Please try again later.",
+        title: "Error",
+        description: "Failed to load your resources",
       });
       return [];
     } finally {
@@ -110,204 +164,154 @@ export default function StudentDashboard() {
     }
   };
 
-  // ✅ Load both courses and resources
+  // --------------------------------------------
+  // Load Dashboard Data
+  // --------------------------------------------
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
 
-    const fetchData = async () => {
+    const loadData = async () => {
       if (!session?.user?.id) return;
 
-      const [coursesData, resourcesData] = await Promise.all([
+      const [courseData, resourceData] = await Promise.all([
         fetchCourses(),
         fetchResources(),
       ]);
 
-      if (isMounted) {
-        setCourseDetails(coursesData);
-        setResourceDetails(resourcesData);
+      if (mounted) {
+        setCourses(courseData);
+        setResourcesList(resourceData);
       }
     };
 
-    fetchData();
-
+    loadData();
     return () => {
-      isMounted = false;
+      mounted = false;
     };
   }, [session?.user?.id]);
- const handleViewResource = async (resource: any) => {
-    try {
-      const res = await fetch("/api/courses/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseId: resource.id }),
-      });
 
-      const data = await res.json();
-      if (data.token) window.location.href=`/dashboard/resources/${data.token}`;
-    } catch (err) {
-      console.error("Token error:", err);
-    }
-  };
-  const handleViewCourse = async (course: any) => {
-    try {
-      const res = await fetch("/api/courses/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseId: course.id }),
-      });
+  // --------------------------------------------
+  // Handlers
+  // --------------------------------------------
+  const handleViewCourse = (course: any) => {};
+  const handleViewResource = (resource: any) => {};
 
-      const data = await res.json();
-      if (data.token)window.location.href=(`/dashboard/courses/${data.token}`);
-    } catch (err) {
-      console.error("Token error:", err);
-    }
-  }
-  // Loading state for both
-  const loading = isLoadingCourses || isLoadingResources;
-
+  // --------------------------------------------
+  // Render
+  // --------------------------------------------
   return (
     <ProtectedRoute allowedRoles={["student"]}>
-      {loading && <Loader isLoading={true} className="h-screen" />}
+      {loading && <Loader isLoading className="h-screen" />}
 
-      <div className="min-h-screen text-gray-900 dark:text-white grid grid-cols-1 md:grid-cols-12 gap-6 transition-colors duration-300">
-        {/* Left Column — Greetings + Stats */}
+      <div className="min-h-screen grid grid-cols-1 md:grid-cols-12 gap-6 text-gray-900 dark:text-white transition-colors">
+
+        {/* LEFT SIDEBAR */}
         <div className="md:col-span-3 flex flex-col gap-4">
+
           {/* Greeting */}
-          <div className="bg-gradient-to-br from-transparent from-40% to-70% to-blue-200 dark:from-[#0f0f0f] dark:to-blue-950 rounded-md px-4 py-7 text-center shadow-md">
-            <p className="whitespace-nowrap">
+          <div className="bg-linear-to-br from-transparent to-blue-200 dark:from-[#0f0f0f] dark:to-blue-950 rounded-md px-4 py-7 text-center shadow-md">
+            <p>
               Hello,&nbsp;
               <span className="text-blue-700 dark:text-blue-500 font-semibold">
                 {session?.user.name}
               </span>{" "}
               👋
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Good Afternoon</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Good Afternoon
+            </p>
           </div>
 
-          {/* Stats Boxes */}
+          {/* Stats */}
           <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between bg-white dark:bg-neutral-900 rounded-lg p-7 shadow-md">
-              <div className="flex flex-col text-left">
-                <h3 className="font-semibold mb-2">Enrolled Courses</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  You’ve joined {CourseDetails.length} active courses
-                </p>
-              </div>
-              <RoundProgress progress={Math.min(CourseDetails.length * 10, 100)} color="text-green-500" size={70} />
-            </div>
+            {/* Courses */}
+            <StatBox
+              title="Enrolled Courses"
+              subtitle={`You’ve joined ${courses.length} active courses`}
+              progress={courses.length * 10}
+              color="text-green-500"
+            />
 
-            <div className="flex items-center justify-between bg-white dark:bg-neutral-900 rounded-lg p-7 shadow-md">
-              <div className="flex flex-col text-left">
-                <h3 className="font-semibold mb-2">Enrolled Resources</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  You’ve joined {ResourceDetails.length} active resources
-                </p>
-              </div>
-              <RoundProgress progress={Math.min(ResourceDetails.length * 10, 100)} color="text-blue-500" size={70} />
-            </div>
+            {/* Resources */}
+            <StatBox
+              title="Enrolled Resources"
+              subtitle={`You’ve joined ${resourcesList.length} active resources`}
+              progress={resourcesList.length * 10}
+              color="text-blue-500"
+            />
 
-            <div className="flex items-center justify-between bg-white dark:bg-neutral-900 rounded-lg p-7 shadow-md">
-              <div className="flex flex-col text-left">
-                <h3 className="font-semibold mb-2">Total Completion</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  You’ve total {CourseDetails.length + ResourceDetails.length} items purchased
-                </p>
-              </div>
-              <RoundProgress progress={Math.min((CourseDetails.length + ResourceDetails.length) * 10, 100)} color="text-yellow-500" size={70} />
-            </div>
+            {/* Total */}
+            <StatBox
+              title="Total Completion"
+              subtitle={`You’ve purchased ${
+                courses.length + resourcesList.length
+              } items`}
+              progress={(courses.length + resourcesList.length) * 10}
+              color="text-yellow-500"
+            />
           </div>
         </div>
 
-        {/* Middle Column — Banner + Courses & Resources */}
-        <div className="md:col-span-6 flex flex-col gap-4">
-          {/* Banner */}
-          <Image src={banner} alt="banner" className="rounded-md dark:shadow-[#1f1f1f] shadow-lg" />
+        {/* RIGHT CONTENT */}
+        <div className="md:col-span-9 flex flex-col gap-6">
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-2 gap-5">
-          {/* Courses Section */}
-          <div className="rounded-lg p-4 flex-1">
-            <p className="font-bold mb-5">My Courses</p>
-           {loading ? (
-          <CourseCardSkeletonRow />
-        ) : CourseDetails.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 xl:grid-cols-1 gap-3">
-            {CourseDetails.map((resource) => (
-              <div
-                key={resource.id}
-                className="bg-white dark:bg-neutral-900 rounded-lg shadow hover:shadow-lg transition p-3 flex flex-col gap-2 min-h-[210px] cursor-pointer"
-                onClick={() => handleViewCourse(resource)}
-              >
-                <img
-                  src={resource.thumbnail || "/placeholder.jpg"}
-                  alt={resource.title}
-                  className="rounded-md h-32 w-full object-cover"
-                  
-                />
+          <AiAgentComingSoon />
 
-                <h3 className="font-semibold text-sm line-clamp-2">
-                  {resource.title}
-                </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-                <p className="text-xs text-gray-500">Rs {resource.price}</p>
+            <ItemList
+              title="My Courses"
+              items={courses}
+              loading={loading}
+              onClick={handleViewCourse}
+              viewMoreLink="/dashboard/my-courses"  // 🔗 set your page link here
+            />
 
-                <button className="bg-green-600 text-white text-xs py-1.5 rounded hover:bg-green-700 w-full mt-auto">
-                  Start
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-gray-500 mt-16">No resources found.</p>
-        )}
-          </div>
+            <ItemList
+              title="My Resources"
+              items={resourcesList}
+              loading={loading}
+              onClick={handleViewResource}
+              viewMoreLink="/dashboard/my-resources"  // 🔗 set your page link here
+            />
 
-          {/* Resources Section */}
-          <div className="rounded-lg p-4 flex-1">
-            <p className="font-bold mb-5">My Resources</p>
-            {loading ? (
-          <CourseCardSkeletonRow />
-        ) : ResourceDetails.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 xl:grid-cols-1 gap-3">
-            {ResourceDetails.map((resource) => (
-              <div
-                key={resource.id}
-                className="bg-white dark:bg-neutral-900 rounded-lg shadow hover:shadow-lg transition p-3 flex flex-col gap-2 min-h-[210px] cursor-pointer"
-                onClick={() => handleViewResource(resource)}
-              >
-                <img
-                  src={resource.thumbnail || "/placeholder.jpg"}
-                  alt={resource.title}
-                  className="rounded-md h-32 w-full object-cover"
-                  
-                />
 
-                <h3 className="font-semibold text-sm line-clamp-2">
-                  {resource.title}
-                </h3>
+            <div className="bg-white dark:bg-neutral-900 rounded-lg p-5 shadow-md min-h-[300px]">
+              <p className="font-bold mb-5">Your Title Here</p>
+            </div>
 
-                <p className="text-xs text-gray-500">Rs {resource.price}</p>
-
-                <button className="bg-green-600 text-white text-xs py-1.5 rounded hover:bg-green-700 w-full mt-auto">
-                  Start
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-gray-500 mt-16">No resources found.</p>
-        )}
-          </div>
-        </div>
-        </div>
-
-        {/* Right Column — Upcoming Sessions */}
-        <div className="md:col-span-3 flex flex-col gap-4">
-          <div className="bg-white dark:bg-neutral-900 rounded-lg p-5 shadow-md h-auto">
-            <p className="font-bold mb-5">Upcoming Sessions / Workshops</p>
-            <SessionDataTable columns={upcoming_session} data={data} />
           </div>
         </div>
       </div>
     </ProtectedRoute>
+  );
+}
+
+// --------------------------------------------
+// Small Reusable Stat Box Component
+// --------------------------------------------
+function StatBox({
+  title,
+  subtitle,
+  progress,
+  color,
+}: {
+  title: string;
+  subtitle: string;
+  progress: number;
+  color: string;
+}) {
+  return (
+    <div className="flex items-center justify-between bg-white dark:bg-neutral-900 rounded-lg p-7 shadow-md">
+      <div>
+        <h3 className="font-semibold mb-2">{title}</h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>
+      </div>
+      <RoundProgress
+        progress={Math.min(progress, 100)}
+        color={color}
+        size={70}
+      />
+    </div>
   );
 }

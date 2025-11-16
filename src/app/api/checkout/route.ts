@@ -14,7 +14,7 @@ export async function POST(req: Request) {
   const conn = await db();
 
   try {
-    const { id, type, name, email, phone } = await req.json();
+    const { id, type, name, email, phone, paymentMethod } = await req.json();
 
     if (!id || !type) {
       return NextResponse.json({ message: "Missing required data" }, { status: 400 });
@@ -76,8 +76,8 @@ export async function POST(req: Request) {
     // ✅ Create order
     const [orderResult]: any = await conn.execute(
       `INSERT INTO orders (user_id, total_amount, discount_amount, final_amount, payment_method, payment_status)
-       VALUES (?, ?, 0, ?, 'cash', 'pending')`,
-      [userId, price, price]
+       VALUES (?, ?, 0, ?, ?, 'pending')`,
+      [userId, price, price, paymentMethod]
     );
 
     const orderId = orderResult.insertId;

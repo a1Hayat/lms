@@ -7,6 +7,10 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { AppAlert } from "@/components/alerts";
 import Loader from "@/components/loader";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Card, CardContent } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator";
 
 export default function CheckoutPage() {
   const { token } = useParams();
@@ -18,6 +22,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [alreadyPurchased, setAlreadyPurchased] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("cash")
 
   const [alert, setAlert] = useState({
     show: false,
@@ -85,7 +90,7 @@ export default function CheckoutPage() {
       const res = await fetch("/api/check-enrollments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: session?.user?.id, course_id: itemId }),
+        body: JSON.stringify({ user_id: session?.user?.id, resource_id: itemId }),
       });
 
       const data = await res.json();
@@ -126,10 +131,12 @@ export default function CheckoutPage() {
           name: userInfo.name,
           email: userInfo.email,
           phone: userInfo.phone,
+          paymentMethod
         }),
       });
 
       const data = await res.json();
+      
       
       setAlert({
         show: true,
@@ -138,7 +145,7 @@ export default function CheckoutPage() {
         description: data.message || "Your cash order has been recorded.",
       });
 
-      setTimeout(() => (window.location.href = `/dashboard`), 1500);
+      setTimeout(() => (window.location.href = `/dashboard/orders`), 1500);
     } catch {
       setAlert({
         show: true,
@@ -151,7 +158,7 @@ export default function CheckoutPage() {
     setPlacingOrder(false);
   };
 
-  // ✅ While fetching
+
   if (loading || alreadyPurchased) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -181,23 +188,28 @@ export default function CheckoutPage() {
             </h2>
 
             <div className="space-y-3 mb-4">
+              
               <Input value={userInfo.name} disabled />
               <Input value={userInfo.email} disabled />
               <Input value={userInfo.phone ?? ""} disabled />
+              <Input value={userInfo.institution ?? ""} disabled />
+              <p className="text-sm py-3 flex justify-self-center">Information not correct? <Button 
+              onClick={()=> window.location.href="/dashboard/settings"}
+              variant={'link'} className="-m-2 underline">Change now</Button></p>
             </div>
 
             <Button
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2"
+              className="w-full bg-blue-600 capitalize hover:bg-blue-700 text-white flex items-center justify-center gap-2"
               onClick={handleSubmit}
               disabled={placingOrder}
             >
               {placingOrder && <Loader isLoading={placingOrder} className=""/>}
-              {placingOrder ? "Placing..." : "Confirm Cash Order"}
+              {placingOrder ? "Placing..." : `Confirm ${paymentMethod} Order`}
             </Button>
           </div>
 
           {/* ✅ Right — Order Summary */}
-          <div className="bg-gray-100 dark:bg-[#1f1f1f] p-5 rounded-xl">
+          <div className=" p-5 border-l">
             <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">
               Order Summary
             </h3>
@@ -205,10 +217,53 @@ export default function CheckoutPage() {
             <div className="space-y-2 text-gray-800 dark:text-gray-200">
               <p><strong>Course:</strong> {course.title}</p>
               <p><strong>Price:</strong> Rs {course.price}</p>
-              <p><strong>Payment Method:</strong> Cash</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Pay at center. Access will be activated after verification.
-              </p>
+              <p className="capitalize"><strong>Payment Method:</strong> {paymentMethod}</p>
+              <RadioGroup
+                defaultValue="cash"
+                className="grid grid-cols-1 gap-4 md:grid-cols-2 mt-3"
+                // 3. Set the value from your state
+                value={paymentMethod}
+                // 4. Update the state whenever the value changes
+                onValueChange={(newValue) => setPaymentMethod(newValue)}
+              >
+                {/* Option 1: Cash (Default) */}
+                <Label
+                  htmlFor="cash"
+                  className="flex cursor-pointer rounded-lg"
+                >
+                  <Card className="w-full border-2 border-muted bg-popover transition-all [&:has([data-state=checked])]:border-primary">
+                    <CardContent className="flex items-center justify-between px-4">
+                      <div className="space-y-1">
+                        <p className="font-semibold">Cash</p>
+                        <p className="text-xs text-muted-foreground">
+                          Pay at any Vision Academy Branch with cash
+                        </p>
+                      </div>
+                      <RadioGroupItem value="cash" id="cash" />
+                    </CardContent>
+                  </Card>
+                </Label>
+
+                {/* Option 2: Card (Disabled) */}
+                <Label
+                  htmlFor="card"
+                  className="flex cursor-not-allowed rounded-lg"
+                >
+                  <div>
+                  <Card className="w-full border-2 border-muted bg-popover transition-all [&:has([data-state=disabled])]:opacity-50 [&:has([data-state=checked])]:border-primary">
+                    <CardContent className="flex items-center justify-between px-4">
+                      <div className="space-y-1">
+                        <p className="font-semibold">Credit/Debit Card</p>
+                        <p className="text-xs text-muted-foreground">
+                          Pay with Visa, Mastercard securely
+                        </p>
+                      </div>
+                      <RadioGroupItem value="card" id="card" disabled />
+                    </CardContent>
+                  </Card>
+                  </div>
+                </Label>
+              </RadioGroup>
             </div>
           </div>
 

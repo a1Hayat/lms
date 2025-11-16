@@ -8,6 +8,8 @@ import { AppAlert } from "../../../../components/alerts";
 // --- END FIX ---
 import { columns, Order } from "./columns";
 import { DataTable } from "./data-table";
+import { AiAgentComingSoon } from "@/components/ai-coming-soon";
+import { AiAgentAlert } from "@/components/ai-agent-alert";
 
 export default function StudentOrdersPage() {
   const { data: session, status } = useSession();
@@ -79,7 +81,6 @@ export default function StudentOrdersPage() {
       />
 
       <h1 className="text-2xl font-bold mb-6">My Order History</h1>
-
       <DataTable columns={columns} data={orders} />
     </div>
   );

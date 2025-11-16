@@ -98,6 +98,18 @@ await page.render({ canvasContext: context, viewport, canvas }).promise;
     renderPage(currentPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pdfDoc]);
+  // Disable right-click inside the viewer
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const disableContext = (e: MouseEvent) => e.preventDefault();
+    container.addEventListener("contextmenu", disableContext);
+
+    return () => {
+      container.removeEventListener("contextmenu", disableContext);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col items-center w-full space-y-4 text-gray-900 dark:text-gray-100">
