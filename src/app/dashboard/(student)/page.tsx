@@ -277,7 +277,7 @@ export default function StudentDashboard() {
 
 
             <div className="bg-white dark:bg-neutral-900 rounded-lg p-5 shadow-md min-h-[300px]">
-              <p className="font-bold mb-5">Your Title Here</p>
+              <p className="font-bold mb-5">Up coming sessions/workshops</p>
             </div>
 
           </div>
