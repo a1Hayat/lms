@@ -22,12 +22,19 @@ export const Contactcolumns: ColumnDef<contact_submission>[] = [
     header: "Message",
   },
   {
-    accessorKey: "created_at",
-    header: "Time",
-    cell: ({ row }) =>
-      new Date(row.original.submitted_at).toLocaleTimeString([], {
+    accessorKey: "submitted_at",
+    header: "Submitted at",
+    cell: ({ getValue }) => {
+      const dateString = getValue<string>()
+      const formatted = new Intl.DateTimeFormat("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
         hour: "2-digit",
         minute: "2-digit",
-      }),
+      }).format(new Date(dateString))
+
+      return <span>{formatted}</span>
+    },
   },
 ];

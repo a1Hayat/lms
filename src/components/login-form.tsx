@@ -117,74 +117,109 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
       </div>
 
       {/* 🔐 Login Form */}
-      <form onSubmit={handleSubmit}>
-        <FieldGroup>
-          <div className="flex flex-col items-center gap-2 text-center">
-            <Image
-              src={logo}
-              alt="logo"
-              width={100}
-              height={100}
-              className="drop-shadow-lg"
-              priority
-            />
-            <h1 className="text-xl font-bold">Welcome to CS With Bari</h1>
-            <FieldDescription>
-              Don&apos;t have an account?{" "}
-              <a href="/register" className="text-blue-400 hover:underline">
-                Sign up
-              </a>
-            </FieldDescription>
-          </div>
+      
+        <form onSubmit={handleSubmit}>
+          <FieldGroup className="space-y-6">
+            {/* --- Header Section --- */}
+            <div className="flex flex-col items-center gap-4 text-center">
+              <Image
+                src={logo}
+                alt="CS With Bari Logo"
+                width={80}
+                height={80}
+                className="drop-shadow-md object-contain"
+                priority
+              />
+              <div className="space-y-1">
+                <h1 className="text-2xl font-bold tracking-tight">
+                  Welcome to CS With Bari
+                </h1>
+                <FieldDescription className="text-sm text-muted-foreground">
+                  Don&apos;t have an account?{" "}
+                  <a
+                    href="/register"
+                    className="font-medium text-blue-600 hover:text-blue-500 hover:underline transition-colors"
+                  >
+                    Sign up
+                  </a>
+                </FieldDescription>
+              </div>
+            </div>
 
-          <Field>
-            <FieldLabel htmlFor="email">Email</FieldLabel>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              required
-              placeholder="m@example.com"
-            />
-          </Field>
+            {/* --- Input Fields --- */}
+            <div className="space-y-4">
+              <Field>
+                <FieldLabel htmlFor="email" className="font-medium">
+                  Email
+                </FieldLabel>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="student@example.com"
+                />
+              </Field>
 
-          <Field>
-            <FieldLabel htmlFor="password">Password</FieldLabel>
-            <Input id="password" name="password" type="password" required />
-          </Field>
+              <Field>
+                <div className="flex items-center justify-between">
+                  <FieldLabel htmlFor="password" className="font-medium">
+                    Password
+                  </FieldLabel>
+                  
+                </div>
+                <Input 
+                  id="password" 
+                  name="password" 
+                  type="password" 
+                  required 
+                />
+              </Field>
+            </div>
 
-          <Field>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full font-semibold"
-            >
-              {loading ? "Logging in..." : "Login"}
-            </Button>
-          </Field>
+            {/* --- Actions --- */}
+            <div className="space-y-4">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full font-bold shadow-sm"
+                size="lg"
+              >
+                {loading ? "Logging in..." : "Login"}
+              </Button>
 
-          <FieldSeparator>Or</FieldSeparator>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
 
-          <Field>
-            <Button
-              variant="outline"
-              type="button"
-              disabled={googleLoading}
-              onClick={handleGoogleLogin}
-              className="w-full flex items-center justify-center gap-2"
-            >
-              {googleLoading ? (
-                "Loading..."
-              ) : (
-                <>
-                  <Image src={google} alt="Google" width={20} height={20} />
-                  Continue with Google
-                </>
-              )}
-            </Button>
-          </Field>
-        </FieldGroup>
-      </form>
+              <Button
+                variant="outline"
+                type="button"
+                disabled={googleLoading}
+                onClick={handleGoogleLogin}
+                className="w-full flex items-center justify-center gap-2 shadow-sm"
+                size="lg"
+              >
+                {googleLoading ? (
+                  "Connecting..."
+                ) : (
+                  <>
+                    <Image src={google} alt="Google" width={18} height={18} />
+                    Google
+                  </>
+                )}
+              </Button>
+            </div>
+          </FieldGroup>
+        </form>
+
 
       <FieldDescription className="px-6 text-center text-sm">
         By clicking continue, you agree to our{" "}
