@@ -131,7 +131,7 @@ export default function CheckoutPage() {
           name: userInfo.name,
           email: userInfo.email,
           phone: userInfo.phone,
-          paymentMethod
+          paymentMethod,
         }),
       });
 
@@ -214,7 +214,7 @@ export default function CheckoutPage() {
               Order Summary
             </h3>
 
-            <div className="space-y-2 text-gray-800 dark:text-gray-200">
+            <div className="space-y-2 bg-gray-100 dark:bg-[#1f1f1f] p-5 rounded-xl text-gray-800 dark:text-gray-200">
               <p><strong>Course:</strong> {course.title}</p>
               <p><strong>Price:</strong> Rs {course.price}</p>
               <p className="capitalize"><strong>Payment Method:</strong> {paymentMethod}</p>

@@ -110,7 +110,7 @@ export default function BundlePage() {
   // ✅ Go to checkout
   const handleCheckout = async () => {
     setLoading(true);
-    router.push(`/checkout?type=bundle&id=${id}`);
+    router.push(`/dashboard/bundles/${token}/checkout`);
   };
   
   // ✅ Go to dashboard
@@ -138,7 +138,7 @@ export default function BundlePage() {
     <div className="w-[90%] sm:w-[85%] lg:w-[80%] mx-auto p-4 sm:p-6 lg:p-10 grid grid-cols-1 lg:grid-cols-3 gap-8 text-gray-900 dark:text-gray-100">
 
       <div className="lg:col-span-2">
-        <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-gray-200 dark:border-[#1f1f1f] shadow-sm group">
+        <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-gray-200 dark:border-[#1f1f1f] shadow-sm group">
           {/* Use the new thumbnail pile component */}
           <BundleThumbnailPile items={bundle.items} />
         </div>
@@ -178,7 +178,7 @@ export default function BundlePage() {
                     }
                     <span className="truncate w-48 sm:w-auto">{item.title}</span>
                   </div>
-                  <span className="text-sm text-gray-500 capitalize flex-shrink-0">{item.type}</span>
+                  <span className="text-sm text-gray-500 capitalize shrink-0">{item.type}</span>
                 </div>
               ))}
             </div>

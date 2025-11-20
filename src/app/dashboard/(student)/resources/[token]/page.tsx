@@ -116,7 +116,7 @@ export default function ResourcePage() {
     <div className="w-[90%] sm:w-[85%] lg:w-[80%] mx-auto p-4 sm:p-6 lg:p-10 grid grid-cols-1 lg:grid-cols-3 gap-8 text-gray-900 dark:text-gray-100">
 
       <div className="lg:col-span-2">
-        <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-gray-200 dark:border-[#1f1f1f] shadow-sm">
+        <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-gray-200 dark:border-[#1f1f1f] shadow-sm">
           <Image src={resource.thumbnail || 'resource_thumbnail'} alt={resource.title} fill className="object-cover object-center" />
         </div>
 

@@ -10,7 +10,7 @@ import { BundleThumbnailPile } from "../../../../components/thumbnailPail";
 
 // --- Helper Component for Skeleton Loading ---
 const BundleCardSkeleton = () => (
-  <div className="bg-white dark:bg-neutral-900 rounded-lg shadow p-3 flex flex-col gap-2 min-h-[240px] animate-pulse">
+  <div className="bg-white dark:bg-neutral-900 rounded-lg shadow p-3 flex flex-col gap-2 min-h-60 animate-pulse">
     <div className="rounded-md h-32 w-full bg-gray-200 dark:bg-neutral-800"></div>
     <div className="h-4 bg-gray-200 dark:bg-neutral-800 rounded w-3/4"></div>
     <div className="h-3 bg-gray-200 dark:bg-neutral-800 rounded w-1/4"></div>
@@ -131,7 +131,7 @@ export default function BrowseBundlesPage() {
             {filtered.map((bundle) => (
               <div
                 key={bundle.id}
-                className="bg-white dark:bg-neutral-900 rounded-lg shadow hover:shadow-lg transition p-3 flex flex-col gap-2 min-h-[240px] cursor-pointer group"
+                className="bg-white dark:bg-neutral-900 rounded-lg shadow hover:shadow-lg transition p-3 flex flex-col gap-2 min-h-60 cursor-pointer group"
                 // --- UPDATED onClick ---
                 onClick={() => handleViewBundle(bundle.id)} // Pass bundle.id
               >

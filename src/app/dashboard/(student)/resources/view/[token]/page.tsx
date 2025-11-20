@@ -1,17 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Loader from "@/components/loader";
+import { useParams } from "next/navigation";
 import SecurePDFViewer from "@/components/pdfViewer";
+import { PdfSkeletonView } from "@/components/loadingSkeleton";
 
-export default function ResourceViewerPage({ params }: { params: { token: string } }) {
-  const { token } = params;
+export default function ResourceViewerPage() {
+  const { token } = useParams();
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!token) return;
+
     const fetchPDF = async () => {
       try {
+        setLoading(true);
         const res = await fetch("/api/resources/view", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -24,7 +28,7 @@ export default function ResourceViewerPage({ params }: { params: { token: string
         const url = URL.createObjectURL(blob);
         setPdfUrl(url);
       } catch (err) {
-        console.error("Error fetching PDF:", err);
+        console.error(err);
         setPdfUrl(null);
       } finally {
         setLoading(false);
@@ -34,18 +38,11 @@ export default function ResourceViewerPage({ params }: { params: { token: string
     fetchPDF();
   }, [token]);
 
-  if (loading) return <Loader isLoading={true} className="h-screen" />;
+  if (loading) return <div className="w-full"><PdfSkeletonView /></div>;
   if (!pdfUrl) return <p className="text-center mt-10">Resource not found or access denied.</p>;
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
-      {/* <iframe
-        src={pdfUrl}
-        width="100%"
-        height="800px"
-        style={{ border: "none" }}
-        title="PDF Viewer"
-      /> */}
-      <p></p>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 w-full">
       <SecurePDFViewer fileUrl={pdfUrl} />
     </div>
   );

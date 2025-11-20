@@ -8,6 +8,9 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { AppAlert } from "../../../../../../components/alerts";
 import Loader from "../../../../../../components/loader";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Card, CardContent } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
 // --- END FIX ---
 
 export default function BundleCheckoutPage() {
@@ -23,6 +26,7 @@ export default function BundleCheckoutPage() {
   const [loading, setLoading] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [alreadyPurchased, setAlreadyPurchased] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("cash")
 
   const [alert, setAlert] = useState({
     show: false,
@@ -30,7 +34,7 @@ export default function BundleCheckoutPage() {
     title: "",
     description: "",
   });
-
+ 
   // ✅ Decode token → get bundle id
   useEffect(() => {
     if (!token) return;
@@ -138,6 +142,7 @@ export default function BundleCheckoutPage() {
           name: userInfo.name,
           email: userInfo.email,
           phone: userInfo.phone,
+          paymentMethod,
         }),
         // --- End Adaptation ---
       });
@@ -151,7 +156,7 @@ export default function BundleCheckoutPage() {
         description: data.message || "Your cash order has been recorded.",
       });
 
-      setTimeout(() => (window.location.href = `/dashboard`), 1500);
+      setTimeout(() => (window.location.href = `/dashboard/orders`), 1500);
     } catch {
       setAlert({
         show: true,
@@ -224,10 +229,53 @@ export default function BundleCheckoutPage() {
               <p className="text-lg font-bold text-blue-600">
                 Final Price: Rs {bundle.discount_price}
               </p>
-              <p className="mt-2"><strong>Payment Method:</strong> Cash</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Pay at center. Access will be activated after verification.
-              </p>
+              <p className="capitalize"><strong>Payment Method:</strong> {paymentMethod}</p>
+              <RadioGroup
+                defaultValue="cash"
+                className="grid grid-cols-1 gap-4 md:grid-cols-2 mt-3"
+                // 3. Set the value from your state
+                value={paymentMethod}
+                // 4. Update the state whenever the value changes
+                onValueChange={(newValue) => setPaymentMethod(newValue)}
+              >
+                {/* Option 1: Cash (Default) */}
+                <Label
+                  htmlFor="cash"
+                  className="flex cursor-pointer rounded-lg"
+                >
+                  <Card className="w-full border-2 border-muted bg-popover transition-all [&:has([data-state=checked])]:border-primary">
+                    <CardContent className="flex items-center justify-between px-4">
+                      <div className="space-y-1">
+                        <p className="font-semibold">Cash</p>
+                        <p className="text-xs text-muted-foreground">
+                          Pay at any Vision Academy Branch with cash
+                        </p>
+                      </div>
+                      <RadioGroupItem value="cash" id="cash" />
+                    </CardContent>
+                  </Card>
+                </Label>
+
+                {/* Option 2: Card (Disabled) */}
+                <Label
+                  htmlFor="card"
+                  className="flex cursor-not-allowed rounded-lg"
+                >
+                  <div>
+                  <Card className="w-full border-2 border-muted bg-popover transition-all [&:has([data-state=disabled])]:opacity-50 [&:has([data-state=checked])]:border-primary">
+                    <CardContent className="flex items-center justify-between px-4">
+                      <div className="space-y-1">
+                        <p className="font-semibold">Credit/Debit Card</p>
+                        <p className="text-xs text-muted-foreground">
+                          Pay with Visa, Mastercard securely
+                        </p>
+                      </div>
+                      <RadioGroupItem value="card" id="card" disabled />
+                    </CardContent>
+                  </Card>
+                  </div>
+                </Label>
+              </RadioGroup>
             </div>
             {/* --- End Adaptation --- */}
 

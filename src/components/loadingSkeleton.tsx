@@ -39,6 +39,44 @@ export function LoadingSkeletonView() {
 }
 
 
+
+
+export function PdfSkeletonView() {
+  return (
+    <div className="w-full min-h-screen flex items-center justify-center">
+      <div className="flex flex-col items-center space-y-6 w-full">
+
+        {/* Top Button */}
+        <Skeleton className="h-10 w-40 rounded-full" />
+
+        {/* Full-Width PDF Rectangle */}
+        <div className="w-full max-w-5xl h-[700px] border rounded-xl p-6 space-y-4">
+          {/* Header */}
+          <Skeleton className="h-8 w-1/3 rounded" />
+
+          {/* Text lines */}
+          <div className="space-y-3">
+            {Array.from({ length: 25 }).map((_, i) => (
+              <Skeleton
+                key={i}
+                className={`h-3 rounded ${
+                  [ "w-full", "w-11/12", "w-10/12", "w-9/12", "w-8/12" ][i % 5]
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom Button */}
+        <Skeleton className="h-10 w-40 rounded-full" />
+
+      </div>
+    </div>
+  )
+}
+
+
+
 export function CourseCardSkeletonRow() {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-2 gap-6 w-full">

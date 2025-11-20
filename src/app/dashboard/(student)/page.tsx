@@ -9,6 +9,7 @@ import { CourseCardSkeletonRow } from "@/components/loadingSkeleton";
 import { AiAgentComingSoon } from "@/components/ai-coming-soon";
 import { AiAgentAlert } from "@/components/ai-agent-alert";
 import { resources } from "../../../../types/resources";
+import { useRouter } from "next/navigation";
 
 // --------------------------------------------
 // Reusable List Component
@@ -86,6 +87,7 @@ function ItemList({
 // --------------------------------------------
 export default function StudentDashboard() {
   const { data: session } = useSession();
+  const router = useRouter()
 
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [isLoadingResources, setIsLoadingResources] = useState(false);
@@ -193,8 +195,31 @@ export default function StudentDashboard() {
   // --------------------------------------------
   // Handlers
   // --------------------------------------------
-  const handleViewCourse = (course: any) => {};
-  const handleViewResource = (resource: any) => {};
+  const handleViewCourse = async (course_id: any) => {
+    // token auth
+      try {
+        const res = await fetch("/api/courses/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ courseId: course_id }),
+        });
+        const data = await res.json();
+        if (data.token) window.location.href=(`/dashboard/courses/${data.token}`);
+        return;
+      } catch (err) {}
+  };
+  const handleViewResource = async (resource_id: any) => {
+    try {
+        const res = await fetch("/api/courses/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ courseId: resource_id }),
+        });
+        const data = await res.json();
+        if (data.token) window.location.href=(`/dashboard/resources/${data.token}`);
+        return;
+      } catch (err) {}
+  };
 
   // --------------------------------------------
   // Render
@@ -263,16 +288,16 @@ export default function StudentDashboard() {
               title="My Courses"
               items={courses}
               loading={loading}
-              onClick={handleViewCourse}
-              viewMoreLink="/dashboard/my-courses"  // 🔗 set your page link here
+              onClick={()=>courses.map((c)=>(handleViewCourse(c.id)))}
+              viewMoreLink="/dashboard/my-courses" 
             />
 
             <ItemList
               title="My Resources"
               items={resourcesList}
               loading={loading}
-              onClick={handleViewResource}
-              viewMoreLink="/dashboard/my-resources"  // 🔗 set your page link here
+              onClick={()=>resourcesList.map((r)=>(handleViewResource(r.id)))}
+              viewMoreLink="/dashboard/my-resources"  
             />
 
 

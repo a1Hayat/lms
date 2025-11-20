@@ -1,29 +1,24 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { getDocument, GlobalWorkerOptions, PDFDocumentProxy, PDFPageProxy, version } from "pdfjs-dist";
-import { Button } from "@/components/ui/button"; // Adjust path to your UI components
-import { Input } from "@/components/ui/input";   // Adjust path to your UI components
+import { getDocument, GlobalWorkerOptions, PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { PdfSkeletonView } from "./loadingSkeleton";
 
-// --- CRITICAL POLYFILL FOR PDF.JS v5 ---
-// Without this, the app will crash with "Promise.withResolvers is not a function"
-if (typeof Promise.withResolvers === "undefined") {
-  if (typeof window !== "undefined") {
-    // @ts-expect-error This is a manual polyfill for older environments
-    window.Promise.withResolvers = function () {
-      let resolve, reject;
-      const promise = new Promise((res, rej) => {
-        resolve = res;
-        reject = rej;
-      });
-      return { promise, resolve, reject };
-    };
-  }
+// Mobile-friendly JS worker
+GlobalWorkerOptions.workerSrc = "/pdf-worker/pdf.worker.min.js";
+
+// Polyfill for PDF.js v5
+if (typeof Promise.withResolvers === "undefined" && typeof window !== "undefined") {
+  // @ts-expect-error
+  window.Promise.withResolvers = function () {
+    let resolve: (value?: unknown) => void = () => {};
+    let reject: (reason?: any) => void = () => {};
+    const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
+    return { promise, resolve, reject };
+  };
 }
-
-// Set the worker source dynamically to match the installed version
-// Point to the file we just copied to the public folder
-GlobalWorkerOptions.workerSrc = "/pdf-worker/pdf.worker.min.mjs";
 
 interface SecurePDFViewerProps {
   fileUrl: string;
@@ -32,28 +27,27 @@ interface SecurePDFViewerProps {
 export default function SecurePDFViewer({ fileUrl }: SecurePDFViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [numPages, setNumPages] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [numPages, setNumPages] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const touchStartX = useRef(0);
 
-  // 1. Load the Document
+  // --- Load PDF ---
   useEffect(() => {
     const loadPDF = async () => {
+      setIsLoading(true);
+      setError(null);
+
       try {
-        setIsLoading(true);
-        setError(null);
-        
-        // Load the document
-        const loadingTask = getDocument(fileUrl);
-        const pdf = await loadingTask.promise;
-        
+        const pdf = await getDocument(fileUrl).promise;
         setPdfDoc(pdf);
         setNumPages(pdf.numPages);
-        setIsLoading(false);
-      } catch (err: any) {
-        console.error("Error loading PDF:", err);
+        setCurrentPage(1);
+      } catch (err) {
+        console.error("PDF Load Error:", err);
         setError("Failed to load PDF. Please try again.");
+      } finally {
         setIsLoading(false);
       }
     };
@@ -61,74 +55,81 @@ export default function SecurePDFViewer({ fileUrl }: SecurePDFViewerProps) {
     if (fileUrl) loadPDF();
   }, [fileUrl]);
 
-  // 2. Render the Page
+  // --- Render PDF page ---
   const renderPage = async (pageNum: number) => {
-    if (!containerRef.current || !pdfDoc) return;
+    if (!pdfDoc || !containerRef.current) return;
 
-    // Fetch page
     const page: PDFPageProxy = await pdfDoc.getPage(pageNum);
-    
-    // Determine scale (Responsive: fits width of container)
-    const containerWidth = containerRef.current.clientWidth || 600;
-    const unscaledViewport = page.getViewport({ scale: 1 });
-    const scale = containerWidth / unscaledViewport.width;
-    const viewport = page.getViewport({ scale: scale > 1.5 ? 1.5 : scale }); // Cap scale at 1.5x
 
-    // Prepare Canvas
+    const style = window.getComputedStyle(containerRef.current);
+    const paddingLeft = parseFloat(style.paddingLeft) || 0;
+    const paddingRight = parseFloat(style.paddingRight) || 0;
+    const usableWidth = containerRef.current.clientWidth - (paddingLeft + paddingRight);
+
+    const dpi = window.devicePixelRatio || 1;
+    const unscaledViewport = page.getViewport({ scale: 1 });
+    const scale = Math.min(1.5, usableWidth / unscaledViewport.width);
+    const viewport = page.getViewport({ scale: scale * dpi });
+
     const canvas = document.createElement("canvas");
     canvas.width = viewport.width;
     canvas.height = viewport.height;
-    canvas.className = "rounded-md shadow-sm block mx-auto"; // Styling
+    canvas.style.width = `${viewport.width / dpi}px`;
+    canvas.style.height = `${viewport.height / dpi}px`;
+    canvas.className = "rounded-md shadow-sm mx-auto block";
 
-    // Clear previous content and append new canvas
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
     containerRef.current.innerHTML = "";
     containerRef.current.appendChild(canvas);
 
-    // Render
-    const context = canvas.getContext("2d");
-    if (context) {
-     // v5 requires the 'canvas' property to be present. 
-// Since we have the element, we pass it here.
-await page.render({ canvasContext: context, viewport, canvas }).promise;
-    }
+    await page.render({ canvasContext: context, viewport, canvas }).promise;
   };
 
-  // Trigger render on page change
+  // --- Re-render on page change ---
   useEffect(() => {
-    renderPage(currentPage);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!pdfDoc) return;
+    requestAnimationFrame(() => renderPage(currentPage));
   }, [currentPage, pdfDoc]);
-  // Disable right-click inside the viewer
+
+  // --- Disable right-click ---
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const prevent = (e: MouseEvent) => e.preventDefault();
+    container.addEventListener("contextmenu", prevent);
+    return () => container.removeEventListener("contextmenu", prevent);
+  }, []);
+
+  // --- Swipe gestures ---
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const disableContext = (e: MouseEvent) => e.preventDefault();
-    container.addEventListener("contextmenu", disableContext);
-
-    return () => {
-      container.removeEventListener("contextmenu", disableContext);
+    const handleTouchStart = (e: TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+    const handleTouchEnd = (e: TouchEvent) => {
+      const diff = e.changedTouches[0].clientX - touchStartX.current;
+      if (diff > 50) setCurrentPage((p) => Math.max(1, p - 1));
+      else if (diff < -50) setCurrentPage((p) => Math.min(numPages, p + 1));
     };
-  }, []);
+
+    container.addEventListener("touchstart", handleTouchStart);
+    container.addEventListener("touchend", handleTouchEnd);
+    return () => {
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [numPages]);
 
   return (
     <div className="flex flex-col items-center w-full space-y-4 text-gray-900 dark:text-gray-100">
-      
-      {/* Error State */}
       {error && <div className="text-red-500 font-semibold">{error}</div>}
+      {isLoading && !error && <div className="w-full"><PdfSkeletonView /></div>}
 
-      {/* Loading State */}
-      {isLoading && !error && <div>Loading PDF...</div>}
-
-      {/* Controls - Only show if PDF is loaded */}
       {!isLoading && !error && numPages > 0 && (
         <div className="flex items-center gap-3 bg-secondary/20 p-2 rounded-lg">
-          <Button 
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} 
-            disabled={currentPage === 1}
-          >
+          <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>
             Previous
           </Button>
 
@@ -142,26 +143,20 @@ await page.render({ canvasContext: context, viewport, canvas }).promise;
                 const val = Number(e.target.value);
                 if (val >= 1 && val <= numPages) setCurrentPage(val);
               }}
-              className="w-16 text-center h-8"
+              className="w-16 h-8 text-center"
             />
             <span className="text-sm text-muted-foreground">/ {numPages}</span>
           </div>
 
-          <Button 
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage((p) => Math.min(numPages, p + 1))} 
-            disabled={currentPage === numPages}
-          >
+          <Button variant="outline" size="sm" disabled={currentPage === numPages} onClick={() => setCurrentPage((p) => Math.min(numPages, p + 1))}>
             Next
           </Button>
         </div>
       )}
 
-      {/* PDF Container */}
       <div
         ref={containerRef}
-        className="w-full max-w-4xl  rounded-xl bg-transparent p-4 min-h-[500px] flex justify-center items-start overflow-auto"
+        className="w-full max-w-full min-h-[70vh] sm:min-h-[80vh] md:min-h-[90vh] rounded-xl bg-transparent p-2 sm:p-4 lg:p-6 flex justify-center items-start overflow-auto"
       />
     </div>
   );

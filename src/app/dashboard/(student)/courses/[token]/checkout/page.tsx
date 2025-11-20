@@ -1,5 +1,8 @@
 "use client";
 
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Card, CardContent } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useParams } from "next/navigation";
@@ -18,6 +21,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [alreadyPurchased, setAlreadyPurchased] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("cash")
 
   const [alert, setAlert] = useState({
     show: false,
@@ -126,6 +130,7 @@ export default function CheckoutPage() {
           name: userInfo.name,
           email: userInfo.email,
           phone: userInfo.phone,
+          paymentMethod,
         }),
       });
 
@@ -134,16 +139,16 @@ export default function CheckoutPage() {
       setAlert({
         show: true,
         type: "success",
-        title: "Order Placed 🎉",
+        title: "Order Placed",
         description: data.message || "Your cash order has been recorded.",
       });
 
-      setTimeout(() => (window.location.href = `/dashboard`), 1500);
+      setTimeout(() => (window.location.href = `/dashboard/orders`), 1500);
     } catch {
       setAlert({
         show: true,
         type: "error",
-        title: "Failed ❌",
+        title: "Failed",
         description: "Order could not be placed. Try again.",
       });
     }
@@ -155,7 +160,7 @@ export default function CheckoutPage() {
   if (loading || alreadyPurchased) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader isLoading={true} />
+        <Loader isLoading={true}  className=""/>
       </div>
     );
   }
@@ -191,26 +196,63 @@ export default function CheckoutPage() {
               onClick={handleSubmit}
               disabled={placingOrder}
             >
-              {placingOrder && <Loader isLoading={placingOrder} />}
+              {placingOrder && <Loader isLoading={placingOrder} className="" />}
               {placingOrder ? "Placing..." : "Confirm Cash Order"}
             </Button>
           </div>
 
           {/* ✅ Right — Order Summary */}
-          <div className="bg-gray-100 dark:bg-[#1f1f1f] p-5 rounded-xl">
-            <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">
-              Order Summary
-            </h3>
-
-            <div className="space-y-2 text-gray-800 dark:text-gray-200">
+           <div className="space-y-2 bg-gray-100 dark:bg-[#1f1f1f] p-5 rounded-xl text-gray-800 dark:text-gray-200">
               <p><strong>Course:</strong> {course.title}</p>
               <p><strong>Price:</strong> Rs {course.price}</p>
-              <p><strong>Payment Method:</strong> Cash</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Pay at center. Access will be activated after verification.
-              </p>
+              <p className="capitalize"><strong>Payment Method:</strong> {paymentMethod}</p>
+              <RadioGroup
+                defaultValue="cash"
+                className="grid grid-cols-1 gap-4 md:grid-cols-2 mt-3"
+                // 3. Set the value from your state
+                value={paymentMethod}
+                // 4. Update the state whenever the value changes
+                onValueChange={(newValue) => setPaymentMethod(newValue)}
+              >
+                {/* Option 1: Cash (Default) */}
+                <Label
+                  htmlFor="cash"
+                  className="flex cursor-pointer rounded-lg"
+                >
+                  <Card className="w-full border-2 border-muted bg-popover transition-all [&:has([data-state=checked])]:border-primary">
+                    <CardContent className="flex items-center justify-between px-4">
+                      <div className="space-y-1">
+                        <p className="font-semibold">Cash</p>
+                        <p className="text-xs text-muted-foreground">
+                          Pay at any Vision Academy Branch with cash
+                        </p>
+                      </div>
+                      <RadioGroupItem value="cash" id="cash" />
+                    </CardContent>
+                  </Card>
+                </Label>
+
+                {/* Option 2: Card (Disabled) */}
+                <Label
+                  htmlFor="card"
+                  className="flex cursor-not-allowed rounded-lg"
+                >
+                  <div>
+                  <Card className="w-full border-2 border-muted bg-popover transition-all [&:has([data-state=disabled])]:opacity-50 [&:has([data-state=checked])]:border-primary">
+                    <CardContent className="flex items-center justify-between px-4">
+                      <div className="space-y-1">
+                        <p className="font-semibold">Credit/Debit Card</p>
+                        <p className="text-xs text-muted-foreground">
+                          Pay with Visa, Mastercard securely
+                        </p>
+                      </div>
+                      <RadioGroupItem value="card" id="card" disabled />
+                    </CardContent>
+                  </Card>
+                  </div>
+                </Label>
+              </RadioGroup>
             </div>
-          </div>
 
         </div>
       </div>
