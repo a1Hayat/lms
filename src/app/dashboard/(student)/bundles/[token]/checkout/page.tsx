@@ -149,12 +149,34 @@ export default function BundleCheckoutPage() {
 
       const data = await res.json();
 
-      setAlert({
+      if (data.status == 'success') {
+
+        await fetch("/api/send-mail", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: userInfo.email,
+            subject: "Your Payment Receipt - CSWithBari",
+            type: "paymentReceipt",
+            payload: {
+              name: userInfo.name,
+              itemName: bundle.title,
+              totalPrice: "PKR " + bundle.price,
+              orderId: data.orderId
+            }
+          })
+        });
+
+        setAlert({
         show: true,
         type: "success",
         title: "Order Placed",
         description: data.message || "Your cash order has been recorded.",
       });
+
+      setTimeout(() => (window.location.href = `/dashboard/orders`), 1500);
+      }
+
 
       setTimeout(() => (window.location.href = `/dashboard/orders`), 1500);
     } catch {
@@ -199,36 +221,35 @@ export default function BundleCheckoutPage() {
             </h2>
 
             <div className="space-y-3 mb-4">
+              
               <Input value={userInfo.name} disabled />
               <Input value={userInfo.email} disabled />
               <Input value={userInfo.phone ?? ""} disabled />
+              <Input value={userInfo.institution ?? ""} disabled />
+              <p className="text-sm py-3 flex justify-self-center">Information not correct? <Button 
+              onClick={()=> window.location.href="/dashboard/settings"}
+              variant={'link'} className="-m-2 underline">Change now</Button></p>
             </div>
 
             <Button
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2"
+              className="w-full bg-blue-600 capitalize hover:bg-blue-700 text-white flex items-center justify-center gap-2"
               onClick={handleSubmit}
               disabled={placingOrder}
             >
               {placingOrder && <Loader isLoading={placingOrder} className=""/>}
-              {placingOrder ? "Placing..." : "Confirm Cash Order"}
+              {placingOrder ? "Placing..." : `Confirm ${paymentMethod} Order`}
             </Button>
           </div>
 
           {/* ✅ Right — Order Summary */}
-          <div className="bg-gray-100 dark:bg-[#1f1f1f] p-5 rounded-xl">
+          <div className=" p-5 border-l">
             <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">
               Order Summary
             </h3>
 
-            {/* --- Adapted for Bundles --- */}
-            <div className="space-y-2 text-gray-800 dark:text-gray-200">
-              <p><strong>Bundle:</strong> {bundle.title}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 line-through">
-                Original Price: Rs {bundle.price}
-              </p>
-              <p className="text-lg font-bold text-blue-600">
-                Final Price: Rs {bundle.discount_price}
-              </p>
+            <div className="space-y-2 bg-gray-100 dark:bg-[#1f1f1f] p-5 rounded-xl text-gray-800 dark:text-gray-200">
+              <p><strong>Course:</strong> {bundle.title}</p>
+              <p><strong>Price:</strong> Rs {bundle.price}</p>
               <p className="capitalize"><strong>Payment Method:</strong> {paymentMethod}</p>
               <RadioGroup
                 defaultValue="cash"
@@ -277,8 +298,6 @@ export default function BundleCheckoutPage() {
                 </Label>
               </RadioGroup>
             </div>
-            {/* --- End Adaptation --- */}
-
           </div>
 
         </div>

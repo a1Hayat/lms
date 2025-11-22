@@ -76,6 +76,22 @@ export default function CashPortalPage() {
           description: data.message,
         });
       } else {
+
+        await fetch("/api/send-mail", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: order.user?.email,
+            subject: "Your Order is Confirmed - CSWithBari",
+            type: "Enrollment",
+            payload: {
+              name: order.user?.name,
+              itemName: order.item?.title,
+              orderId: order.id
+            }
+          })
+        });
+
         setAlert({
           show: true,
           type: "success",

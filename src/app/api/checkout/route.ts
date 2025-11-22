@@ -97,7 +97,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       message: "Order placed successfully. Pay cash to activate.",
-      orderId
+      orderId,
+      status:'success'
     });
 
   } catch (error) {

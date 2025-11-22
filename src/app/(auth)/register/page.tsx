@@ -6,6 +6,7 @@ import logo from "@/components/icons/logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import CustomPhoneInput from "@/components/phoneInput";
+import { welcomeEmail } from "@/components/email_templates/welcome";
 import {
   Field,
   FieldDescription,
@@ -51,6 +52,8 @@ export default function RegisterForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    setLoading(true)
 
     if (formData.password !== formData.confirmPassword){
       return setAlert({
@@ -111,13 +114,51 @@ export default function RegisterForm() {
       }
 
       // ✅ Success
+      
+      const send_success_email = async () => {
+        try {
+            
+
+            await fetch("/api/send-mail", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                to: formData.email,
+                subject: "Account Created",
+                type: "successRegistration",
+                payload: {
+                  name: formData.name,
+                  ctaUrl: "http://localhost:3000/dashboard"
+                }
+              })
+            });
+            
+            await fetch("/api/send-mail", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                to: formData.email,
+                subject: "Welcome to CSWithBari",
+                type: "welcome",
+                payload: {
+                  name: formData.name,
+                  ctaUrl: "http://localhost:3000/dashboard"
+                }
+              })
+            });
+
+          } catch (err) {}
+      }
+      await send_success_email();
       setAlert({
         show: true,
         type: "success",
         title: "Success!",
         description: data.message || "User registered successfully.",
       })
+      setLoading(false)
       window.location.href=('/login')
+
     } catch (err) {
       console.error(err)
       setAlert({

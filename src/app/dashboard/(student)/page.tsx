@@ -10,6 +10,7 @@ import { AiAgentComingSoon } from "@/components/ai-coming-soon";
 import { AiAgentAlert } from "@/components/ai-agent-alert";
 import { resources } from "../../../../types/resources";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 // --------------------------------------------
 // Reusable List Component
@@ -220,6 +221,7 @@ export default function StudentDashboard() {
         return;
       } catch (err) {}
   };
+
 
   // --------------------------------------------
   // Render

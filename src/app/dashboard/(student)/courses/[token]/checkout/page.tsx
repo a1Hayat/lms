@@ -136,7 +136,25 @@ export default function CheckoutPage() {
 
       const data = await res.json();
 
-      setAlert({
+      if (data.status == 'success') {
+
+        await fetch("/api/send-mail", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: userInfo.email,
+            subject: "Your Payment Receipt - CSWithBari",
+            type: "paymentReceipt",
+            payload: {
+              name: userInfo.name,
+              itemName: course.title,
+              totalPrice: "PKR " + course.price,
+              orderId: data.orderId
+            }
+          })
+        });
+
+        setAlert({
         show: true,
         type: "success",
         title: "Order Placed",
@@ -144,6 +162,9 @@ export default function CheckoutPage() {
       });
 
       setTimeout(() => (window.location.href = `/dashboard/orders`), 1500);
+      }
+
+      
     } catch {
       setAlert({
         show: true,
@@ -179,30 +200,39 @@ export default function CheckoutPage() {
       <div className="mt-20 flex items-center justify-center p-6">
         <div className="w-full max-w-5xl bg-white dark:bg-[#0f0f0f] rounded-xl shadow-lg p-6 grid md:grid-cols-2 gap-6">
           
-          {/* ✅ Left — User Info */}
           <div>
             <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
               Confirm Your Order
             </h2>
 
             <div className="space-y-3 mb-4">
+              
               <Input value={userInfo.name} disabled />
               <Input value={userInfo.email} disabled />
               <Input value={userInfo.phone ?? ""} disabled />
+              <Input value={userInfo.institution ?? ""} disabled />
+              <p className="text-sm py-3 flex justify-self-center">Information not correct? <Button 
+              onClick={()=> window.location.href="/dashboard/settings"}
+              variant={'link'} className="-m-2 underline">Change now</Button></p>
             </div>
 
             <Button
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2"
+              className="w-full bg-blue-600 capitalize hover:bg-blue-700 text-white flex items-center justify-center gap-2"
               onClick={handleSubmit}
               disabled={placingOrder}
             >
-              {placingOrder && <Loader isLoading={placingOrder} className="" />}
-              {placingOrder ? "Placing..." : "Confirm Cash Order"}
+              {placingOrder && <Loader isLoading={placingOrder} className=""/>}
+              {placingOrder ? "Placing..." : `Confirm ${paymentMethod} Order`}
             </Button>
           </div>
 
           {/* ✅ Right — Order Summary */}
-           <div className="space-y-2 bg-gray-100 dark:bg-[#1f1f1f] p-5 rounded-xl text-gray-800 dark:text-gray-200">
+          <div className=" p-5 border-l">
+            <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">
+              Order Summary
+            </h3>
+
+            <div className="space-y-2 bg-gray-100 dark:bg-[#1f1f1f] p-5 rounded-xl text-gray-800 dark:text-gray-200">
               <p><strong>Course:</strong> {course.title}</p>
               <p><strong>Price:</strong> Rs {course.price}</p>
               <p className="capitalize"><strong>Payment Method:</strong> {paymentMethod}</p>
@@ -253,6 +283,7 @@ export default function CheckoutPage() {
                 </Label>
               </RadioGroup>
             </div>
+          </div>
 
         </div>
       </div>

@@ -138,12 +138,34 @@ export default function CheckoutPage() {
       const data = await res.json();
       
       
-      setAlert({
+      if (data.status == 'success') {
+
+        await fetch("/api/send-mail", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: userInfo.email,
+            subject: "Your Payment Receipt - CSWithBari",
+            type: "paymentReceipt",
+            payload: {
+              name: userInfo.name,
+              itemName: course.title,
+              totalPrice: "PKR " + course.price,
+              orderId: data.orderId
+            }
+          })
+        });
+
+        setAlert({
         show: true,
         type: "success",
-        title: "Order Placed ",
+        title: "Order Placed",
         description: data.message || "Your cash order has been recorded.",
       });
+
+      setTimeout(() => (window.location.href = `/dashboard/orders`), 1500);
+      }
+
 
       setTimeout(() => (window.location.href = `/dashboard/orders`), 1500);
     } catch {
