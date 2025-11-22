@@ -63,12 +63,12 @@ export default function AllOrdersPage() {
         onClose={() => setAlert({ ...alert, show: false })}
       />
       {/* This layout fills the screen and provides padding */}
-      <div className="flex h-screen flex-col overflow-hidden p-6 gap-6">
+      <div className="flex h-screen flex-col p-6 gap-6">
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">
           All Orders Record
         </h1>
         {/* This container grows to fill remaining space and allows the table to scroll internally */}
-        <div className="w-full overflow-hidden">
+        <div className="w-full">
           <DataTable columns={columns} data={orders} />
         </div>
       </div>
