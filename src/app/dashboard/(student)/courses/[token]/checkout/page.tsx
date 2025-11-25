@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { AppAlert } from "@/components/alerts";
 import Loader from "@/components/loader";
+import BankTransferModal from "@/components/bank_details_modal";
 
 export default function CheckoutPage() {
   const { token } = useParams();
@@ -22,6 +23,7 @@ export default function CheckoutPage() {
   const [placingOrder, setPlacingOrder] = useState(false);
   const [alreadyPurchased, setAlreadyPurchased] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash")
+  const [isBankModalOpen, setIsBankModalOpen] = useState(false)
 
   const [alert, setAlert] = useState({
     show: false,
@@ -86,7 +88,7 @@ export default function CheckoutPage() {
     if (!itemId || !userInfo) return;
 
     const checkPurchase = async () => {
-      const res = await fetch("/api/check-enrollment", {
+      const res = await fetch("/api/check-enrollments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: session?.user?.id, course_id: itemId }),
@@ -149,7 +151,8 @@ export default function CheckoutPage() {
               name: userInfo.name,
               itemName: course.title,
               totalPrice: "PKR " + course.price,
-              orderId: data.orderId
+              orderId: data.orderId,
+              paymentMethod
             }
           })
         });
@@ -161,7 +164,7 @@ export default function CheckoutPage() {
         description: data.message || "Your cash order has been recorded.",
       });
 
-      setTimeout(() => (window.location.href = `/dashboard/orders`), 1500);
+      setIsBankModalOpen(true)
       }
 
       
@@ -176,7 +179,9 @@ export default function CheckoutPage() {
 
     setPlacingOrder(false);
   };
-
+  const CloseBankModal = () => {
+    window.location.href="/dashboard/orders"
+  }
   // ✅ While fetching
   if (loading || alreadyPurchased) {
     return (
@@ -222,9 +227,16 @@ export default function CheckoutPage() {
               disabled={placingOrder}
             >
               {placingOrder && <Loader isLoading={placingOrder} className=""/>}
-              {placingOrder ? "Placing..." : `Confirm ${paymentMethod} Order`}
+              {placingOrder ? "Placing..." : `Confirm Order`}
             </Button>
           </div>
+
+          <BankTransferModal
+            orderId={itemId}
+            amount={course.price}
+            isOpen={isBankModalOpen}
+            onClose={CloseBankModal}
+          />
 
           {/* ✅ Right — Order Summary */}
           <div className=" p-5 border-l">
@@ -262,26 +274,27 @@ export default function CheckoutPage() {
                   </Card>
                 </Label>
 
-                {/* Option 2: Card (Disabled) */}
+                {/* Option 2: Bank */}
                 <Label
-                  htmlFor="card"
-                  className="flex cursor-not-allowed rounded-lg"
+                  htmlFor="cash"
+                  className="flex cursor-pointer rounded-lg"
                 >
-                  <div>
+                  
                   <Card className="w-full border-2 border-muted bg-popover transition-all [&:has([data-state=disabled])]:opacity-50 [&:has([data-state=checked])]:border-primary">
                     <CardContent className="flex items-center justify-between px-4">
                       <div className="space-y-1">
-                        <p className="font-semibold">Credit/Debit Card</p>
+                        <p className="font-semibold">Bank Transfer</p>
                         <p className="text-xs text-muted-foreground">
-                          Pay with Visa, Mastercard securely
+                          Transfer to the bank account after placing order. 
                         </p>
                       </div>
-                      <RadioGroupItem value="card" id="card" disabled />
+                      <RadioGroupItem value="bank" id="bank" />
                     </CardContent>
                   </Card>
-                  </div>
+                  
                 </Label>
               </RadioGroup>
+              <p className="text-xs text-center text-blue-500 mt-">Payment instructions will be displayed / sent on your email after placing order.  </p>            
             </div>
           </div>
 

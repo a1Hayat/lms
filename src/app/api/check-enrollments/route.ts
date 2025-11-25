@@ -12,27 +12,42 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ Check COURSE enrollment/order
+    // ---------------------------------------------------------
+    // 1. CHECK COURSE (Direct Enrollment OR Valid Order OR Bundle Order)
+    // ---------------------------------------------------------
     if (course_id) {
-      const [rows] = await db.query(
+      // A. Check Active Enrollment
+      const [enrollment] = await db.query(
         `SELECT id 
          FROM enrollments 
-         WHERE user_id = ? AND course_id = ? 
+         WHERE user_id = ? 
+           AND course_id = ? 
+           AND status = 'active' 
          LIMIT 1`,
         [user_id, course_id]
       );
 
-      if (Array.isArray(rows) && rows.length > 0) {
+      if (Array.isArray(enrollment) && enrollment.length > 0) {
         return NextResponse.json({ purchased: true, type: "course", reason: "already_enrolled" });
       }
 
+      // B. Check PAID Orders (Direct Course OR Bundle containing Course)
+      // This query checks:
+      // 1. Did they buy the course directly?
+      // 2. OR Did they buy a bundle that contains this course?
       const [order] = await db.query(
         `SELECT oi.id 
          FROM order_items oi 
          JOIN orders o ON o.id = oi.order_id
-         WHERE oi.course_id = ? AND o.user_id = ? 
+         LEFT JOIN bundle_items bi ON bi.bundle_id = oi.bundle_id
+         WHERE o.user_id = ? 
+           AND o.payment_status = 'paid' 
+           AND (
+             oi.course_id = ? 
+             OR bi.course_id = ?
+           )
          LIMIT 1`,
-        [course_id, user_id]
+        [user_id, course_id, course_id]
       );
 
       if (Array.isArray(order) && order.length > 0) {
@@ -40,27 +55,39 @@ export async function POST(req: Request) {
       }
     }
 
-    // ✅ Check RESOURCE enrollment/order
+    // ---------------------------------------------------------
+    // 2. CHECK RESOURCE (Direct Enrollment OR Valid Order OR Bundle Order)
+    // ---------------------------------------------------------
     if (resource_id) {
-      const [rows] = await db.query(
+      // A. Check Active Enrollment
+      const [enrollment] = await db.query(
         `SELECT id 
          FROM enrollments 
-         WHERE user_id = ? AND resource_id = ? 
+         WHERE user_id = ? 
+           AND resource_id = ? 
+           AND status = 'active'
          LIMIT 1`,
         [user_id, resource_id]
       );
 
-      if (Array.isArray(rows) && rows.length > 0) {
+      if (Array.isArray(enrollment) && enrollment.length > 0) {
         return NextResponse.json({ purchased: true, type: "resource", reason: "already_enrolled" });
       }
 
+      // B. Check PAID Orders (Direct Resource OR Bundle containing Resource)
       const [order] = await db.query(
         `SELECT oi.id 
          FROM order_items oi 
          JOIN orders o ON o.id = oi.order_id
-         WHERE oi.resource_id = ? AND o.user_id = ? 
+         LEFT JOIN bundle_items bi ON bi.bundle_id = oi.bundle_id
+         WHERE o.user_id = ? 
+           AND o.payment_status = 'paid'
+           AND (
+             oi.resource_id = ? 
+             OR bi.resource_id = ?
+           )
          LIMIT 1`,
-        [resource_id, user_id]
+        [user_id, resource_id, resource_id]
       );
 
       if (Array.isArray(order) && order.length > 0) {

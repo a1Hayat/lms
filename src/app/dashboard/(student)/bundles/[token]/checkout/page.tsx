@@ -11,6 +11,7 @@ import Loader from "../../../../../../components/loader";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import BankTransferModal from "@/components/bank_details_modal";
 // --- END FIX ---
 
 export default function BundleCheckoutPage() {
@@ -27,6 +28,8 @@ export default function BundleCheckoutPage() {
   const [placingOrder, setPlacingOrder] = useState(false);
   const [alreadyPurchased, setAlreadyPurchased] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash")
+  const [isBankModalOpen, setIsBankModalOpen] = useState(false)
+
 
   const [alert, setAlert] = useState({
     show: false,
@@ -162,7 +165,8 @@ export default function BundleCheckoutPage() {
               name: userInfo.name,
               itemName: bundle.title,
               totalPrice: "PKR " + bundle.price,
-              orderId: data.orderId
+              orderId: data.orderId,
+              paymentMethod
             }
           })
         });
@@ -174,11 +178,10 @@ export default function BundleCheckoutPage() {
         description: data.message || "Your cash order has been recorded.",
       });
 
-      setTimeout(() => (window.location.href = `/dashboard/orders`), 1500);
+      setIsBankModalOpen(true)
       }
 
 
-      setTimeout(() => (window.location.href = `/dashboard/orders`), 1500);
     } catch {
       setAlert({
         show: true,
@@ -190,6 +193,11 @@ export default function BundleCheckoutPage() {
 
     setPlacingOrder(false);
   };
+
+    const CloseBankModal = () => {
+    window.location.href="/dashboard/orders"
+  }
+
 
   // ✅ While fetching
   if (loading || alreadyPurchased || !bundle) { // Added !bundle check
@@ -211,7 +219,7 @@ export default function BundleCheckoutPage() {
         onClose={() => setAlert({ ...alert, show: false })}
       />
 
-      <div className="mt-20 flex items-center justify-center p-6">
+      <div className=" flex items-center justify-center p-6">
         <div className="w-full max-w-5xl bg-white dark:bg-[#0f0f0f] rounded-xl shadow-lg p-6 grid md:grid-cols-2 gap-6">
           
           {/* ✅ Left — User Info */}
@@ -237,9 +245,16 @@ export default function BundleCheckoutPage() {
               disabled={placingOrder}
             >
               {placingOrder && <Loader isLoading={placingOrder} className=""/>}
-              {placingOrder ? "Placing..." : `Confirm ${paymentMethod} Order`}
+              {placingOrder ? "Placing..." : `Confirm Order`}
             </Button>
           </div>
+
+           <BankTransferModal
+            orderId={bundleId}
+            amount={bundle.discount_price}
+            isOpen={isBankModalOpen}
+            onClose={CloseBankModal}
+          />
 
           {/* ✅ Right — Order Summary */}
           <div className=" p-5 border-l">
@@ -248,8 +263,9 @@ export default function BundleCheckoutPage() {
             </h3>
 
             <div className="space-y-2 bg-gray-100 dark:bg-[#1f1f1f] p-5 rounded-xl text-gray-800 dark:text-gray-200">
-              <p><strong>Course:</strong> {bundle.title}</p>
-              <p><strong>Price:</strong> Rs {bundle.price}</p>
+              <p><strong>Bundle:</strong> {bundle.title}</p>
+              <p className="line-through text-sm"><strong>Orignal Price:</strong> Rs {bundle.price}</p>
+              <p className="text-blue-500"><strong>Discounted Price:</strong> Rs {bundle.discount_price}</p>
               <p className="capitalize"><strong>Payment Method:</strong> {paymentMethod}</p>
               <RadioGroup
                 defaultValue="cash"
@@ -277,26 +293,28 @@ export default function BundleCheckoutPage() {
                   </Card>
                 </Label>
 
-                {/* Option 2: Card (Disabled) */}
+                {/* Option 2: Bank */}
                 <Label
-                  htmlFor="card"
-                  className="flex cursor-not-allowed rounded-lg"
+                  htmlFor="cash"
+                  className="flex cursor-pointer rounded-lg"
                 >
-                  <div>
+                  
                   <Card className="w-full border-2 border-muted bg-popover transition-all [&:has([data-state=disabled])]:opacity-50 [&:has([data-state=checked])]:border-primary">
                     <CardContent className="flex items-center justify-between px-4">
                       <div className="space-y-1">
-                        <p className="font-semibold">Credit/Debit Card</p>
+                        <p className="font-semibold">Bank Transfer</p>
                         <p className="text-xs text-muted-foreground">
-                          Pay with Visa, Mastercard securely
+                          Transfer to the bank account after placing order. 
                         </p>
                       </div>
-                      <RadioGroupItem value="card" id="card" disabled />
+                      <RadioGroupItem value="bank" id="bank" />
                     </CardContent>
                   </Card>
-                  </div>
+                  
                 </Label>
               </RadioGroup>
+              <p className="text-xs text-center text-blue-500 mt-">Payment instructions will be displayed / sent on your email after placing order.  </p>
+            
             </div>
           </div>
 

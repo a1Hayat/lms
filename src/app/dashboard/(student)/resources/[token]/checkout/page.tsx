@@ -11,6 +11,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator";
+import Link from "next/link";
+import BankTransferModal from "@/components/bank_details_modal";
+import { IconCreditCard } from "@tabler/icons-react";
 
 export default function CheckoutPage() {
   const { token } = useParams();
@@ -23,6 +26,7 @@ export default function CheckoutPage() {
   const [placingOrder, setPlacingOrder] = useState(false);
   const [alreadyPurchased, setAlreadyPurchased] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash")
+  const [isBankModalOpen, setIsBankModalOpen] = useState(false)
 
   const [alert, setAlert] = useState({
     show: false,
@@ -151,7 +155,8 @@ export default function CheckoutPage() {
               name: userInfo.name,
               itemName: course.title,
               totalPrice: "PKR " + course.price,
-              orderId: data.orderId
+              orderId: data.orderId,
+              paymentMethod
             }
           })
         });
@@ -163,11 +168,10 @@ export default function CheckoutPage() {
         description: data.message || "Your cash order has been recorded.",
       });
 
-      setTimeout(() => (window.location.href = `/dashboard/orders`), 1500);
+      setIsBankModalOpen(true)
       }
 
 
-      setTimeout(() => (window.location.href = `/dashboard/orders`), 1500);
     } catch {
       setAlert({
         show: true,
@@ -179,6 +183,10 @@ export default function CheckoutPage() {
 
     setPlacingOrder(false);
   };
+
+  const CloseBankModal = () => {
+    window.location.href="/dashboard/orders"
+  }
 
 
   if (loading || alreadyPurchased) {
@@ -200,8 +208,8 @@ export default function CheckoutPage() {
         onClose={() => setAlert({ ...alert, show: false })}
       />
 
-      <div className="mt-20 flex items-center justify-center p-6">
-        <div className="w-full max-w-5xl bg-white dark:bg-[#0f0f0f] rounded-xl shadow-lg p-6 grid md:grid-cols-2 gap-6">
+      <div className=" flex items-center justify-center p-6">
+        <div className="w-full max-w-5xl bg-white dark:bg-[#0f0f0f] rounded-xl p-6 grid md:grid-cols-2 gap-6">
           
           {/* ✅ Left — User Info */}
           <div>
@@ -226,9 +234,16 @@ export default function CheckoutPage() {
               disabled={placingOrder}
             >
               {placingOrder && <Loader isLoading={placingOrder} className=""/>}
-              {placingOrder ? "Placing..." : `Confirm ${paymentMethod} Order`}
+              {placingOrder ? "Placing..." : `Confirm Order`}
             </Button>
           </div>
+
+          <BankTransferModal
+            orderId={itemId}
+            amount={course.price}
+            isOpen={isBankModalOpen}
+            onClose={CloseBankModal}
+          />
 
           {/* ✅ Right — Order Summary */}
           <div className=" p-5 border-l">
@@ -240,6 +255,7 @@ export default function CheckoutPage() {
               <p><strong>Course:</strong> {course.title}</p>
               <p><strong>Price:</strong> Rs {course.price}</p>
               <p className="capitalize"><strong>Payment Method:</strong> {paymentMethod}</p>
+              
               <RadioGroup
                 defaultValue="cash"
                 className="grid grid-cols-1 gap-4 md:grid-cols-2 mt-3"
@@ -266,27 +282,29 @@ export default function CheckoutPage() {
                   </Card>
                 </Label>
 
-                {/* Option 2: Card (Disabled) */}
+                {/* Option 2: Bank */}
                 <Label
-                  htmlFor="card"
-                  className="flex cursor-not-allowed rounded-lg"
+                  htmlFor="cash"
+                  className="flex cursor-pointer rounded-lg"
                 >
-                  <div>
+                  
                   <Card className="w-full border-2 border-muted bg-popover transition-all [&:has([data-state=disabled])]:opacity-50 [&:has([data-state=checked])]:border-primary">
                     <CardContent className="flex items-center justify-between px-4">
                       <div className="space-y-1">
-                        <p className="font-semibold">Credit/Debit Card</p>
+                        <p className="font-semibold">Bank Transfer</p>
                         <p className="text-xs text-muted-foreground">
-                          Pay with Visa, Mastercard securely
+                          Transfer to the bank account after placing order. 
                         </p>
                       </div>
-                      <RadioGroupItem value="card" id="card" disabled />
+                      <RadioGroupItem value="bank" id="bank" />
                     </CardContent>
                   </Card>
-                  </div>
+                  
                 </Label>
               </RadioGroup>
+              <p className="text-xs text-center text-blue-500 mt-">Payment instructions will be displayed / sent on your email after placing order.  </p>
             </div>
+            
           </div>
 
         </div>

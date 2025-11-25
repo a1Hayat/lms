@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button"
 import { signOut } from "next-auth/react"
 import { useState } from "react"
 import Loader from "@/components/loader"
+import BankTransferModal from "./bank_details_modal"
 
 type User = {
   name: string
@@ -38,7 +39,8 @@ type User = {
 
 export function MenuUser({ user }: { user: User }) {
   const [loading, setLoading] = useState(false)
-
+  const [isBankModalOpen, setIsBankModalOpen] = useState(false)
+  
   const handleLogout = async () => {
     setLoading(true)
     await signOut({ callbackUrl: "/login" })
@@ -48,6 +50,13 @@ export function MenuUser({ user }: { user: User }) {
 
   return (
     <DropdownMenu>
+      <BankTransferModal
+          orderId={0}
+          amount={0}
+          isOpen={isBankModalOpen}
+          onClose={()=>setIsBankModalOpen(false)}
+          whatsappNumber="+92 332 4040614"
+        />
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
@@ -100,6 +109,10 @@ export function MenuUser({ user }: { user: User }) {
            <DropdownMenuItem>
             <IconHistoryToggle className="mr-2 size-4" />
             <button onClick={()=>window.location.href='/dashboard/orders'}>Order History</button>
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            <IconCreditCard className="mr-2 size-4" />
+            <button onClick={()=>setIsBankModalOpen(true)}>Payment Instructions</button>
           </DropdownMenuItem>
           <DropdownMenuItem>
             <IconSettings className="mr-2 size-4" />

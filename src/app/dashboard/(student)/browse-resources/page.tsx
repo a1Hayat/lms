@@ -46,7 +46,7 @@ export default function BrowseResourcePage() {
               body: JSON.stringify({ 
                 user_id: session.user.id, 
                 resource_id: res.id 
-              }),
+              }), 
             });
             const checkData = await checkRes.json();
 
