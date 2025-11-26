@@ -21,7 +21,7 @@ import Image from "next/image"
 import { NavUser } from "./nav-users"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
-import { IconAdjustmentsCog, IconBook, IconBook2, IconBoxMultiple, IconBrandParsinta, IconCardboards, IconCreditCard, IconGauge, IconHistoryToggle, IconMessagePause, IconSchool } from "@tabler/icons-react"
+import { IconAdjustmentsCog, IconBook, IconBook2, IconBoxMultiple, IconBrandParsinta, IconCardboards, IconCast, IconCreditCard, IconGauge, IconHistoryToggle, IconMessagePause, IconSchool } from "@tabler/icons-react"
 import { NavMain } from "./nav-main"
 import { Separator } from "./ui/separator"
 
@@ -70,21 +70,6 @@ const data = {
       ],
     },
     {
-      title: "Manage Resources",
-      url: "#",
-      icon: IconBook2,
-      items: [
-        {
-          title: "Resources",
-          url: "/dashboard/admin/resources",
-        },
-        {
-          title: "Add New",
-          url: "/dashboard/admin/resources/add",
-        },
-      ],
-    },
-    {
       title: "Manage Bundles",
       url: "#",
       icon: IconBoxMultiple,
@@ -96,6 +81,21 @@ const data = {
         {
           title: "Add New",
           url: "/dashboard/admin/add_bundle",
+        },
+      ],
+    },
+    {
+      title: "Manage Workshops",
+      url: "#",
+      icon: IconCast,
+      items: [
+        {
+          title: "Workshops",
+          url: "/dashboard/admin/manage_workshops",
+        },
+        {
+          title: "Submissions",
+          url: "/dashboard/admin/manage_workshops/registrations",
         },
       ],
     },

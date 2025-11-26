@@ -143,7 +143,7 @@ export default function BrowseResourcePage() {
                   {res.title}
                 </h3>
 
-                <p className="text-xs text-gray-500">Rs {res.price}</p>
+                <p className="text-xs text-gray-500">Rs {new Intl.NumberFormat('en-PK').format(res.price)}</p>
 
                 <Button
                   className={`text-xs py-1.5 rounded w-full mt-auto ${

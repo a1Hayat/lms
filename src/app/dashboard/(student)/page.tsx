@@ -11,6 +11,8 @@ import { AiAgentAlert } from "@/components/ai-agent-alert";
 import { resources } from "../../../../types/resources";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import StudentWorkshopsPage from "./workshop_table";
+import { Badge } from "@/components/ui/badge";
 
 // --------------------------------------------
 // Reusable List Component
@@ -56,7 +58,7 @@ function ItemList({
                   {item.title}
                 </h3>
 
-                <p className="text-xs text-gray-500">Rs {item.price}</p>
+                <p className="text-xs text-gray-500">Rs {new Intl.NumberFormat('en-PK').format(item.price)}</p>
 
                 <button className="bg-green-600 text-white text-xs py-1.5 rounded hover:bg-green-700 w-full mt-auto">
                   Start
@@ -282,7 +284,7 @@ export default function StudentDashboard() {
         {/* RIGHT CONTENT */}
         <div className="md:col-span-9 flex flex-col gap-6">
 
-          <AiAgentComingSoon />
+          <AiAgentAlert />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
@@ -303,8 +305,15 @@ export default function StudentDashboard() {
             />
 
 
-            <div className="bg-white dark:bg-neutral-900 rounded-lg p-5 shadow-md min-h-[300px]">
+            <div className="bg-white dark:bg-neutral-900 rounded-lg p-5 shadow-md">
               <p className="font-bold mb-5">Up coming sessions/workshops</p>
+              {/* <StudentWorkshopsPage/> */}
+             <Badge
+                variant="outline"
+                className=" text-blue-600 flex justify-self-center border-blue-500/50 dark:text-blue-400"
+              >
+                Coming Soon
+              </Badge>
             </div>
 
           </div>

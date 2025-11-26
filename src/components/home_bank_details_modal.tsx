@@ -29,9 +29,7 @@ import Image from "next/image";
 interface PaymentInstructionProps {
   isOpen: boolean;
   onClose: () => void;
-  amount: number;
   currency?: string;
-  orderId: number;
   whatsappNumber: string;
 }
 
@@ -41,12 +39,10 @@ interface CenterDetails {
   mapLink: string;
 }
 
-const BankTransferModal: React.FC<PaymentInstructionProps> = ({
+const HomeBankTransferModal: React.FC<PaymentInstructionProps> = ({
   isOpen,
   onClose,
-  amount,
   currency = "PKR",
-  orderId,
   whatsappNumber = "+92 332 4040614"
 }) => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -125,15 +121,9 @@ const BankTransferModal: React.FC<PaymentInstructionProps> = ({
                 <ShieldCheck className="h-5 w-5 text-green-600" />
                 Payment Methods
               </span>
-              <div className="flex items-center gap-2 text-base font-normal bg-muted/50 px-3 py-1 rounded-full border border-border">
-                <span className="text-muted-foreground text-sm">Total:</span>
-                <span className="font-bold text-foreground">
-                  {new Intl.NumberFormat('en-PK', { style: 'currency', currency }).format(amount)}
-                </span>
-              </div>
             </DialogTitle>
             <DialogDescription>
-              Order ID: <span className="font-mono font-medium text-primary">{orderId}</span>
+              Order ID: <span className="font-mono font-medium text-primary">[Order ID]</span>
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -205,7 +195,7 @@ const BankTransferModal: React.FC<PaymentInstructionProps> = ({
             <TabsContent value="cash" className="mt-0 space-y-4 focus-visible:ring-0">
               <div className="rounded-md bg-muted/50 border border-border p-4 text-sm text-muted-foreground text-center mb-4">
                 Please visit any of our centers below to pay in cash. 
-                <br/> Mention Order ID <span className="font-mono font-bold text-foreground">{orderId}</span> at the counter.
+                <br/> Mention Order ID <span className="font-mono font-bold text-foreground">[Order ID]</span> at the counter.
               </div>
               
               <div className="grid gap-3 max-h-[250px] overflow-y-auto pr-1">
@@ -260,4 +250,4 @@ const BankTransferModal: React.FC<PaymentInstructionProps> = ({
   );
 };
 
-export default BankTransferModal;
+export default HomeBankTransferModal;

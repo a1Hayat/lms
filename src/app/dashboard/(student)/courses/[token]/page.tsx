@@ -161,7 +161,7 @@ export default function CoursePage() {
       <aside className="border dark:border-[#1f1f1f] rounded-xl p-6 shadow-sm h-fit sticky top-10">
         <h1 className="text-2xl font-semibold">{course.title}</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">{formattedLevel}</p>
-        <p className="text-lg font-semibold text-blue-600 dark:text-blue-400 mt-3">Rs. {course.price}</p>
+        <p className="text-lg font-semibold text-blue-600 dark:text-blue-400 mt-3">Rs. {new Intl.NumberFormat('en-PK').format(course.price)}</p>
 
         {/* ✅ Button Logic */}
         {isEnrolled ? (

@@ -29,7 +29,7 @@ export default function BundleCheckoutPage() {
   const [alreadyPurchased, setAlreadyPurchased] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash")
   const [isBankModalOpen, setIsBankModalOpen] = useState(false)
-
+  const [order_id, setOrder_id] = useState<number>(0)
 
   const [alert, setAlert] = useState({
     show: false,
@@ -151,7 +151,7 @@ export default function BundleCheckoutPage() {
       });
 
       const data = await res.json();
-
+      setOrder_id(data.orderId)
       if (data.status == 'success') {
 
         await fetch("/api/send-mail", {
@@ -249,11 +249,12 @@ export default function BundleCheckoutPage() {
             </Button>
           </div>
 
-           <BankTransferModal
-            orderId={bundleId}
+          <BankTransferModal
+            orderId={order_id}
             amount={bundle.discount_price}
             isOpen={isBankModalOpen}
             onClose={CloseBankModal}
+            whatsappNumber="+92 332 4040614"
           />
 
           {/* ✅ Right — Order Summary */}
@@ -264,10 +265,10 @@ export default function BundleCheckoutPage() {
 
             <div className="space-y-2 bg-gray-100 dark:bg-[#1f1f1f] p-5 rounded-xl text-gray-800 dark:text-gray-200">
               <p><strong>Bundle:</strong> {bundle.title}</p>
-              <p className="line-through text-sm"><strong>Orignal Price:</strong> Rs {bundle.price}</p>
-              <p className="text-blue-500"><strong>Discounted Price:</strong> Rs {bundle.discount_price}</p>
+              <p className="line-through text-sm"><strong>Orignal Price:</strong> Rs {new Intl.NumberFormat('en-PK').format(bundle.price)}</p>
+              <p className="text-blue-500"><strong>Discounted Price:</strong> Rs {new Intl.NumberFormat('en-PK').format(bundle.discount_price)}</p>
               <p className="capitalize"><strong>Payment Method:</strong> {paymentMethod}</p>
-              <RadioGroup
+              <RadioGroup 
                 defaultValue="cash"
                 className="grid grid-cols-1 gap-4 md:grid-cols-2 mt-3"
                 // 3. Set the value from your state

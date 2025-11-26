@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 
 export function AiAgentAlert() {
   return (
-    <Alert className="relative border-primary/30 bg-primary/5 text-primary">
+    <Alert className="relative border-blue/30 bg-primary/5 text-primary">
       <Sparkles className="h-4 w-4 text-primary!" />
       <Badge className="absolute -right-3 -top-3">Coming Soon</Badge>
       <AlertTitle className="font-bold">

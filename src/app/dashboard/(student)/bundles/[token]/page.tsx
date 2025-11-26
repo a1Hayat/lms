@@ -193,10 +193,10 @@ export default function BundlePage() {
         {/* Pricing */}
         <div className="flex items-baseline gap-2 mt-3">
           <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-            Rs. {bundle.discount_price}
+            Rs. {new Intl.NumberFormat('en-PK').format(bundle.discount_price)}
           </p>
           <p className="text-md text-gray-500 line-through">
-            Rs. {bundle.price}
+            Rs. {new Intl.NumberFormat('en-PK').format(bundle.price)}
           </p>
         </div>
 

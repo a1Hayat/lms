@@ -132,7 +132,7 @@ export default function MyCoursesPage() {
                   {course.title}
                 </h3>
 
-                <p className="text-xs text-gray-500">Rs {course.price}</p>
+                <p className="text-xs text-gray-500">Rs {new Intl.NumberFormat('en-PK').format(course.price)}</p>
 
                 <button className="bg-green-600 text-white text-xs py-1.5 rounded hover:bg-green-700 w-full mt-auto">
                   Start

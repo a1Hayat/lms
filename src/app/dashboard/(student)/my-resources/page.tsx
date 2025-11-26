@@ -132,7 +132,7 @@ export default function MyResourcesPage() {
                   {resource.title}
                 </h3>
 
-                <p className="text-xs text-gray-500">Rs {resource.price}</p>
+                <p className="text-xs text-gray-500">Rs {new Intl.NumberFormat('en-PK').format(resource.price)}</p>
 
                 <button className="bg-green-600 text-white text-xs py-1.5 rounded hover:bg-green-700 w-full mt-auto">
                   Start

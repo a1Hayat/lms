@@ -24,6 +24,7 @@ export default function CheckoutPage() {
   const [alreadyPurchased, setAlreadyPurchased] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash")
   const [isBankModalOpen, setIsBankModalOpen] = useState(false)
+  const [order_id, setOrder_id] = useState<number>(0)
 
   const [alert, setAlert] = useState({
     show: false,
@@ -139,6 +140,7 @@ export default function CheckoutPage() {
       const data = await res.json();
 
       if (data.status == 'success') {
+      setOrder_id(data.orderId)
 
         await fetch("/api/send-mail", {
           method: "POST",
@@ -232,10 +234,11 @@ export default function CheckoutPage() {
           </div>
 
           <BankTransferModal
-            orderId={itemId}
+            orderId={order_id}
             amount={course.price}
             isOpen={isBankModalOpen}
             onClose={CloseBankModal}
+            whatsappNumber="+92 332 4040614"
           />
 
           {/* ✅ Right — Order Summary */}
@@ -246,7 +249,7 @@ export default function CheckoutPage() {
 
             <div className="space-y-2 bg-gray-100 dark:bg-[#1f1f1f] p-5 rounded-xl text-gray-800 dark:text-gray-200">
               <p><strong>Course:</strong> {course.title}</p>
-              <p><strong>Price:</strong> Rs {course.price}</p>
+              <p><strong>Price:</strong> Rs {new Intl.NumberFormat('en-PK').format(course.price)}</p>
               <p className="capitalize"><strong>Payment Method:</strong> {paymentMethod}</p>
               <RadioGroup
                 defaultValue="cash"

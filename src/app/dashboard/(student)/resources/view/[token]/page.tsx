@@ -38,6 +38,8 @@ export default function ResourceViewerPage() {
     fetchPDF();
   }, [token]);
 
+
+
   if (loading) return <div className="w-full"><PdfSkeletonView /></div>;
   if (!pdfUrl) return <p className="text-center mt-10">Resource not found or access denied.</p>;
 

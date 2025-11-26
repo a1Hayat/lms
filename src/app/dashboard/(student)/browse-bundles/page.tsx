@@ -152,10 +152,10 @@ export default function BrowseBundlesPage() {
                 {/* Pricing */}
                 <div className="flex items-baseline gap-2">
                   <p className="text-lg font-bold text-blue-600">
-                    Rs {bundle.discount_price}
+                    Rs {new Intl.NumberFormat('en-PK').format(bundle.discount_price)}
                   </p>
                   <p className="text-xs text-gray-500 line-through">
-                    Rs {bundle.price}
+                    Rs {new Intl.NumberFormat('en-PK').format(bundle.price)}
                   </p>
                 </div>
 

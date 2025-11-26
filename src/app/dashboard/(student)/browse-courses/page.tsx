@@ -137,7 +137,7 @@ export default function BrowseCoursesPage() {
                   {course.title}
                 </h3>
 
-                <p className="text-xs text-gray-500">Rs {course.price}</p>
+                <p className="text-xs text-gray-500">Rs {new Intl.NumberFormat('en-PK').format(course.price)}</p>
 
                 <button
                   className={`text-xs py-1.5 rounded w-full mt-auto ${

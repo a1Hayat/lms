@@ -141,7 +141,7 @@ export default function ResourcePage() {
         <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">{formattedLevel}</p>
 
         <p className="text-lg font-semibold text-blue-600 dark:text-blue-400 mt-3">
-          Rs. {resource.price}
+          Rs. {new Intl.NumberFormat('en-PK').format(resource.price)}
         </p>
 
         {purchased ? (

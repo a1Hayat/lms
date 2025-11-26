@@ -29,6 +29,7 @@ import { signOut } from "next-auth/react"
 import { useState } from "react"
 import Loader from "@/components/loader"
 import BankTransferModal from "./bank_details_modal"
+import HomeBankTransferModal from "./home_bank_details_modal"
 
 type User = {
   name: string
@@ -50,9 +51,7 @@ export function MenuUser({ user }: { user: User }) {
 
   return (
     <DropdownMenu>
-      <BankTransferModal
-          orderId={0}
-          amount={0}
+      <HomeBankTransferModal
           isOpen={isBankModalOpen}
           onClose={()=>setIsBankModalOpen(false)}
           whatsappNumber="+92 332 4040614"
