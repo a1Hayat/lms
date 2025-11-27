@@ -1,26 +1,39 @@
 // app/api/admin/dashboard/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../auth/[...nextauth]/route"; // Adjust path if needed
-import { db } from "@/lib/db"; // Import the shared pool
+import { authOptions } from "../../auth/[...nextauth]/route";
+import { db } from "@/lib/db";
+import { RowDataPacket } from "mysql2"; // Import this to type DB rows
 
-// Helper to get dates for the last 7 days (for the chart)
+// 1. Define Types for your Database Responses
+interface StatsRow extends RowDataPacket {
+  total_courses: number;
+  total_resources: number;
+  total_students: number;
+  total_bundles: number;
+}
+
+interface GraphRow extends RowDataPacket {
+  date: string;
+  count: number;
+}
+
+// Helper to get dates for the last 7 days
 function getLast7Days() {
   const days = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    // Format as YYYY-MM-DD
     days.push(d.toLocaleDateString("en-CA"));
   }
   return days;
 }
 
-export async function GET(req: Request) {
+// 2. Removed 'req' argument since it was unused
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
-    // 1. Admin-only route
     if (session?.user?.role !== "admin") {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
@@ -28,14 +41,12 @@ export async function GET(req: Request) {
       );
     }
 
-    // --- We can run all queries concurrently for better performance ---
     const [
       [statsRows],
       [graphRows],
       [ordersRows],
       [submissionRows]
     ] = await Promise.all([
-      // Query 1: Get Stat Cards Data
       db.execute(
         `SELECT 
           (SELECT COUNT(*) FROM courses) AS total_courses,
@@ -43,7 +54,6 @@ export async function GET(req: Request) {
           (SELECT COUNT(*) FROM users WHERE role = 'student') AS total_students,
           (SELECT COUNT(*) FROM bundles) AS total_bundles;`
       ),
-      // Query 2: Get Order Graph Data
       db.execute(
         `SELECT 
             DATE_FORMAT(created_at, '%Y-%m-%d') as date, 
@@ -53,7 +63,6 @@ export async function GET(req: Request) {
          GROUP BY date
          ORDER BY date ASC;`
       ),
-      // Query 3: Get Today's Orders
       db.execute(
         `SELECT 
             o.id as order_id, o.final_amount, o.payment_status, o.created_at,
@@ -69,7 +78,6 @@ export async function GET(req: Request) {
          WHERE DATE(o.created_at) = CURDATE()
          ORDER BY o.created_at DESC;`
       ),
-      // Query 4: Get Today's Contact Submissions
       db.execute(
         `SELECT id, name, email, message, submitted_at 
          FROM contact_submissions 
@@ -78,12 +86,17 @@ export async function GET(req: Request) {
       )
     ]);
 
-    // --- Process Stats ---
-    const stats = (statsRows as any)[0];
+    // 3. Process Stats: Cast to StatsRow[] instead of 'any'
+    const stats = (statsRows as StatsRow[])[0];
 
-    // --- Process Graph Data ---
+    // 4. Process Graph Data: Cast to GraphRow[]
     const last7Days = getLast7Days();
-    const graphDataMap = new Map((graphRows as any[]).map((r: any) => [r.date, r.count]));
+    
+    // We cast graphRows to GraphRow[], so 'r' is now automatically typed
+    const graphDataMap = new Map(
+      (graphRows as GraphRow[]).map((r) => [r.date, r.count])
+    );
+
     const chartData = last7Days.map((date) => ({
       name: new Date(date).toLocaleDateString("en-US", {
         month: "short",
@@ -92,13 +105,12 @@ export async function GET(req: Request) {
       count: graphDataMap.get(date) || 0,
     }));
 
-    // --- Return Combined Data ---
     return NextResponse.json({
       success: true,
       stats,
       chartData,
       todayOrders: ordersRows,
-      todaySubmissions: submissionRows, // <-- Combined data
+      todaySubmissions: submissionRows,
     });
     
   } catch (error) {

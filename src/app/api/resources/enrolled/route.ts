@@ -1,5 +1,15 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { RowDataPacket } from "mysql2";
+
+// Define the shape of the resource data
+interface ResourceRow extends RowDataPacket {
+  id: number;
+  title: string;
+  description: string;
+  thumbnail?: string;
+  // Add other resource columns as needed
+}
 
 export async function POST(req: Request) {
   try {
@@ -10,7 +20,8 @@ export async function POST(req: Request) {
     }
 
     // Fetch enrolled resources
-    const [resources]: any = await db.query(
+    // FIX: Use generic <ResourceRow[]> instead of : any
+    const [resources] = await db.query<ResourceRow[]>(
       `SELECT r.*
        FROM enrollments e
        JOIN resources r ON r.id = e.resource_id

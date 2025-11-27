@@ -10,8 +10,6 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { AppAlert } from "@/components/alerts"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { useSession } from "next-auth/react"
 
 
@@ -108,22 +106,24 @@ export default function AddCourseForm() {
   }, [formState, getValues])
 
   const next = async () => {
-  // Only validate fields from the current step
-  const stepFields = {
-    1: ["title", "description", "price", "level"],
-    2: ["lessons"],
-  } as const
+    // Only validate fields from the current step
+    const stepFields = {
+      1: ["title", "description", "price", "level"],
+      2: ["lessons"],
+    } as const
 
-  const fieldsToValidate = stepFields[step]
-  const isStepValid = await methods.trigger(fieldsToValidate)
+    // FIX: Check if step corresponds to keys in stepFields to narrow type
+    if (step === 1 || step === 2) {
+      const fieldsToValidate = stepFields[step]
+      const isStepValid = await methods.trigger(fieldsToValidate)
 
-  console.log("Step valid?", isStepValid, methods.formState.errors)
+      console.log("Step valid?", isStepValid, methods.formState.errors)
 
-  if (!isStepValid) return
-  setStep((s) => Math.min(3, s + 1))
-}
-
-
+      if (!isStepValid) return
+    }
+    
+    setStep((s) => Math.min(3, s + 1))
+  }
 
   const prev = () => setStep(s => Math.max(1, s - 1))
 
@@ -165,7 +165,7 @@ export default function AddCourseForm() {
         thumbnailUrl,
         lessons: lessonsWithUrls,
         savedAt: new Date().toISOString(),
-        user_id: session?.user.id,
+        user_id: session?.user?.id,
       }
 
       const res = await fetch("/api/courses/draft", {

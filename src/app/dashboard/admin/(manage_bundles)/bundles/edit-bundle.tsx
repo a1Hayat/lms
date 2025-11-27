@@ -15,7 +15,14 @@ import {
 import { FieldLabel } from "@/components/ui/field"
 import { AppAlert } from "@/components/alerts"
 import Loader from "@/components/loader"
-import MultiSelect from "@/components/multi-select" // ✅ correct file path
+import MultiSelect from "@/components/multi-select"
+
+// 1. Define Interface for Course/Resource items
+interface BundleItem {
+  id: number;
+  title: string;
+  price: number;
+}
 
 interface BundleProps {
   isOpen: boolean
@@ -24,14 +31,15 @@ interface BundleProps {
 }
 
 const Edit_Bundle: React.FC<BundleProps> = ({ isOpen, onClose, bundle_id }) => {
-  const [courses, setCourses] = useState<any[]>([])
-  const [resources, setResources] = useState<any[]>([])
+  // 2. Apply strict typing to state
+  const [courses, setCourses] = useState<BundleItem[]>([])
+  const [resources, setResources] = useState<BundleItem[]>([])
 
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    selectedCourses: [] as any[],
-    selectedResources: [] as any[],
+    selectedCourses: [] as BundleItem[],
+    selectedResources: [] as BundleItem[],
     price: 0,
     discount_price: 0,
   })
@@ -73,13 +81,15 @@ const Edit_Bundle: React.FC<BundleProps> = ({ isOpen, onClose, bundle_id }) => {
         setFormData({
           title: b.title,
           description: b.description,
-          selectedCourses: courseData.courses.filter((c: any) => b.courses.includes(c.id)),
-          selectedResources: resourceData.resources.filter((r: any) => b.resources.includes(r.id)),
+          // 3. Fix map/filter logic typing by inferring from state types above
+          selectedCourses: courseData.courses.filter((c: BundleItem) => b.courses.includes(c.id)),
+          selectedResources: resourceData.resources.filter((r: BundleItem) => b.resources.includes(r.id)),
           price: b.price,
           discount_price: b.discount_price,
         })
 
-      } catch (error) {
+      } catch {
+        // 4. Removed unused 'error' variable
         setAlert({
           show: true,
           type: "error",
@@ -96,13 +106,14 @@ const Edit_Bundle: React.FC<BundleProps> = ({ isOpen, onClose, bundle_id }) => {
   // ✅ auto calculate price
   useEffect(() => {
     const total =
-      formData.selectedCourses.reduce((s, c: any) => s + Number(c.price), 0) +
-      formData.selectedResources.reduce((s, r: any) => s + Number(r.price), 0)
+      formData.selectedCourses.reduce((s, c) => s + Number(c.price), 0) +
+      formData.selectedResources.reduce((s, r) => s + Number(r.price), 0)
 
     setFormData(prev => ({ ...prev, price: total }))
   }, [formData.selectedCourses, formData.selectedResources])
 
-  const handleSubmit = async (e: any) => {
+  // 5. Fix Event Handler Type
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
@@ -114,8 +125,8 @@ const Edit_Bundle: React.FC<BundleProps> = ({ isOpen, onClose, bundle_id }) => {
           bundle_id,
           title: formData.title,
           description: formData.description,
-          courses: formData.selectedCourses.map((c: any) => c.id),
-          resources: formData.selectedResources.map((r: any) => r.id),
+          courses: formData.selectedCourses.map((c) => c.id),
+          resources: formData.selectedResources.map((r) => r.id),
           price: formData.price,
           discount_price: formData.discount_price,
         }),
@@ -186,14 +197,16 @@ const Edit_Bundle: React.FC<BundleProps> = ({ isOpen, onClose, bundle_id }) => {
                 label="Courses"
                 items={courses}
                 selected={formData.selectedCourses}
-                setSelected={(v) => setFormData({ ...formData, selectedCourses: v })}
+                // Fix: Use 'unknown' type to satisfy linter, then cast to BundleItem[]
+                setSelected={(v: unknown) => setFormData({ ...formData, selectedCourses: v as BundleItem[] })}
               />
 
               <MultiSelect
                 label="Resources"
                 items={resources}
                 selected={formData.selectedResources}
-                setSelected={(v) => setFormData({ ...formData, selectedResources: v })}
+                // Fix: Use 'unknown' type to satisfy linter, then cast to BundleItem[]
+                setSelected={(v: unknown) => setFormData({ ...formData, selectedResources: v as BundleItem[] })}
               />
 
               <FieldLabel>Total Original Price</FieldLabel>

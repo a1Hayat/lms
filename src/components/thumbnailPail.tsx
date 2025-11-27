@@ -1,9 +1,15 @@
 "use client";
 
+// Define interface for the items
+interface ThumbnailItem {
+  thumbnail: string | null;
+  title: string;
+}
+
 // This component displays a "pile" of thumbnails for bundles
 // that don't have their own single thumbnail.
 
-export const BundleThumbnailPile = ({ items }: { items: any[] }) => {
+export const BundleThumbnailPile = ({ items }: { items: ThumbnailItem[] }) => {
   const placeholder = "/placeholder.jpg";
   // Get the first 3 items, or fewer if not available
   const displayItems = items.slice(0, 3);
@@ -21,6 +27,7 @@ export const BundleThumbnailPile = ({ items }: { items: any[] }) => {
   return (
     <div className="relative w-full h-full">
       {/* Base card, always present if items exist */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={displayItems[0]?.thumbnail || placeholder}
         alt={displayItems[0]?.title}
@@ -29,6 +36,7 @@ export const BundleThumbnailPile = ({ items }: { items: any[] }) => {
       />
       {/* Second card, rotated */}
       {displayItems[1] && (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={displayItems[1]?.thumbnail || placeholder}
           alt={displayItems[1]?.title}
@@ -38,6 +46,7 @@ export const BundleThumbnailPile = ({ items }: { items: any[] }) => {
       )}
       {/* Top card, rotated other way */}
       {displayItems[2] && (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={displayItems[2]?.thumbnail || placeholder}
           alt={displayItems[2]?.title}

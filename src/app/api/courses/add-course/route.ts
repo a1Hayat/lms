@@ -1,6 +1,7 @@
-import {db} from "@/lib/db"
+import { db } from "@/lib/db"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../../auth/[...nextauth]/route"
+import { ResultSetHeader } from "mysql2"
 
 export async function POST(req: Request) {
   try {
@@ -21,7 +22,8 @@ export async function POST(req: Request) {
     const safeThumbnail = thumbnailUrl || null
 
     // ✅ Insert course
-    const [courseResult]: any = await db.execute(
+    // FIX: Use <ResultSetHeader> generic instead of :any
+    const [courseResult] = await db.execute<ResultSetHeader>(
       `INSERT INTO courses (title, level, description, thumbnail, price, instructor_id, created_at)
        VALUES (?, ?, ?, ?, ?, ?, NOW())`,
       [safeTitle, safeLevel, safeDescription, safeThumbnail, safePrice, user_id]

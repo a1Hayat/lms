@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Loader from "@/components/loader";
 import { AppAlert } from "@/components/alerts";
 import { StatCards } from "@/components/statCards";
-import { OrdersChart } from "@/components/ordersChart";
 import {
   columns,
   TodayOrder,
@@ -21,15 +20,10 @@ type Stats = {
   total_students: number;
   total_bundles: number;
 };
-type ChartData = {
-  name: string;
-  count: number;
-};
 
 export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<Stats | null>(null);
-  const [chartData, setChartData] = useState<ChartData[]>([]);
   const [todayOrders, setTodayOrders] = useState<TodayOrder[]>([]);
   const [todaySubmissions, setTodaySubmissions] = useState<contact_submission[]>([])
   const [alert, setAlert] = useState({
@@ -49,16 +43,17 @@ export default function AdminDashboardPage() {
         if (!data.success) throw new Error(data.message || "Failed to fetch data");
 
         setStats(data.stats);
-        setChartData(data.chartData);
         setTodayOrders(data.todayOrders);
-        setTodaySubmissions(data.todaySubmissions)  // ✅ Correct
+        setTodaySubmissions(data.todaySubmissions)
 
-      } catch (err: any) {
+      } catch (err) {
+        // Fix: Safely handle error type instead of using 'any'
+        const errorMessage = err instanceof Error ? err.message : "An unknown error occurred";
         setAlert({
           show: true,
           type: "error",
           title: "Error",
-          description: err.message,
+          description: errorMessage,
         });
       }
       setLoading(false);
@@ -85,18 +80,17 @@ export default function AdminDashboardPage() {
       {/* Stat Cards */}
       {stats && <StatCards stats={stats} />}
 
-      {/* Orders Chart */}
-      {/* <OrdersChart data={chartData} /> */}
-
       {/* Today's Orders Table */}
       
         <h2 className="font-semibold mb-4 text-black dark:text-white">
-          Today's Contact Submissions
+          {/* Fix: Escaped apostrophe */}
+          Today&apos;s Contact Submissions
         </h2>
         <TodayContactDataTable columns={Contactcolumns} data={todaySubmissions} />
 
         <h2 className="font-semibold mb-4 text-black dark:text-white">
-          Today's Orders
+          {/* Fix: Escaped apostrophe */}
+          Today&apos;s Orders
         </h2>
         <TodayOrdersDataTable columns={columns} data={todayOrders} />
    

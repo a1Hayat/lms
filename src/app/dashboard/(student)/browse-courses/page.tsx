@@ -8,13 +8,22 @@ import { AppAlert } from "@/components/alerts";
 import { CourseCardSkeletonRow } from "@/components/loadingSkeleton";
 import { useRouter } from "next/navigation";
 
+// 1. Define Interface
+interface Course {
+  id: number;
+  title: string;
+  thumbnail: string | null;
+  price: number;
+  isEnrolled?: boolean;
+}
+
 export default function BrowseCoursesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [courses, setCourses] = useState<any[]>([]);
-  const [enrolledIds, setEnrolledIds] = useState<number[]>([]);
-  const [filtered, setFiltered] = useState<any[]>([]);
+  // 2. Fix State Types & Remove unused 'enrolledIds' state
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [filtered, setFiltered] = useState<Course[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -27,7 +36,7 @@ export default function BrowseCoursesPage() {
 
   // ✅ Fetch all + enrolled
   useEffect(() => {
-    if (status !== "authenticated") return;
+    if (status !== "authenticated" || !session?.user?.id) return;
 
     const loadData = async () => {
       setLoading(true);
@@ -44,10 +53,13 @@ export default function BrowseCoursesPage() {
         const all = await allRes.json();
         const enrolled = await enrolledRes.json();
 
-        const enrolledIDs = enrolled.courses?.map((c: any) => c.id) || [];
-        setEnrolledIds(enrolledIDs);
+        // Fix: Explicitly type 'c'
+        const enrolledIDs = enrolled.courses?.map((c: { id: number }) => c.id) || [];
+        
+        // We don't need to setEnrolledIds state here since we map immediately below
 
-        const tagged = all.courses.map((c: any) => ({
+        // Fix: Explicitly type 'c'
+        const tagged = all.courses.map((c: Course) => ({
           ...c,
           isEnrolled: enrolledIDs.includes(c.id),
         }));
@@ -67,7 +79,8 @@ export default function BrowseCoursesPage() {
     };
 
     loadData();
-  }, [status]);
+  // 3. Fix Missing Dependency: added session?.user?.id
+  }, [status, session?.user?.id]);
 
   // ✅ search
   useEffect(() => {
@@ -78,8 +91,8 @@ export default function BrowseCoursesPage() {
   }, [search, courses]);
 
   // ✅ View / enroll logic
-  const handleViewCourse = async (course: any) => {
-  
+  // 4. Fix 'any' type
+  const handleViewCourse = async (course: Course) => {
       // token auth
       try {
         const res = await fetch("/api/courses/token", {
@@ -90,10 +103,9 @@ export default function BrowseCoursesPage() {
         const data = await res.json();
         if (data.token) router.push(`/dashboard/courses/${data.token}`);
         return;
-      } catch (err) {}
-    
-
-
+      } catch {
+        // 5. Removed unused 'err' variable
+      }
   };
 
   return (
@@ -127,6 +139,8 @@ export default function BrowseCoursesPage() {
                 className="bg-white dark:bg-neutral-900 rounded-lg shadow hover:shadow-lg transition p-3 flex flex-col gap-2 min-h-[210px] cursor-pointer"
                 onClick={() => handleViewCourse(course)}
               >
+                {/* 6. Suppress Next.js img warning safely without complex config changes */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={course.thumbnail || "/placeholder.jpg"}
                   alt={course.title}
@@ -158,5 +172,3 @@ export default function BrowseCoursesPage() {
     </ProtectedRoute>
   );
 }
-
-

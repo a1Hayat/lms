@@ -1,19 +1,28 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import ProtectedRoute from "@/components/auth/protectedRoute";
 import { Input } from "@/components/ui/input";
 import { AppAlert } from "@/components/alerts";
 import { useRouter } from "next/navigation";
 import { CourseCardSkeletonRow } from "@/components/loadingSkeleton";
 
+// 1. Define Interface
+interface Resource {
+  id: number;
+  title: string;
+  thumbnail: string | null;
+  price: number;
+}
+
 export default function MyResourcesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [resources, setResources] = useState<any[]>([]);
-  const [filtered, setFiltered] = useState<any[]>([]);
+  // 2. Fix State Types
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [filtered, setFiltered] = useState<Resource[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -25,14 +34,17 @@ export default function MyResourcesPage() {
   });
 
   // ✅ Get enrolled resources
-  const fetchResources = async () => {
+  // 3. Use useCallback to fix dependency warning
+  const fetchResources = useCallback(async () => {
+    if (!session?.user?.id) return;
+
     try {
       setLoading(true);
 
       const res = await fetch("/api/resources/enrolled", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: session?.user?.id }),
+        body: JSON.stringify({ user_id: session.user.id }),
       });
 
       const data = await res.json();
@@ -50,7 +62,8 @@ export default function MyResourcesPage() {
       setResources(data.resources);
       setFiltered(data.resources);
 
-    } catch (err) {
+    } catch {
+      // 4. Removed unused 'err' variable
       setAlert({
         show: true,
         type: "error",
@@ -60,10 +73,11 @@ export default function MyResourcesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [session?.user?.id]);
 
   // ✅ View Resource with token
-  const handleViewResource = async (resource: any) => {
+  // 5. Fix argument type
+  const handleViewResource = async (resource: Resource) => {
     try {
       const res = await fetch("/api/courses/token", {
         method: "POST",
@@ -81,7 +95,7 @@ export default function MyResourcesPage() {
   // ✅ Fetch when auth ready
   useEffect(() => {
     if (status === "authenticated") fetchResources();
-  }, [status]);
+  }, [status, fetchResources]); // Added fetchResources dependency
 
   // ✅ Search filter
   useEffect(() => {
@@ -122,6 +136,8 @@ export default function MyResourcesPage() {
                 className="bg-white dark:bg-neutral-900 rounded-lg shadow hover:shadow-lg transition p-3 flex flex-col gap-2 min-h-[210px] cursor-pointer"
                 onClick={() => handleViewResource(resource)}
               >
+                {/* 6. Suppress next/image warning */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={resource.thumbnail || "/placeholder.jpg"}
                   alt={resource.title}

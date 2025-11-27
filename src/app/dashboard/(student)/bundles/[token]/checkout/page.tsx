@@ -1,6 +1,5 @@
 "use client";
 
-// --- FIX: Corrected relative import paths ---
 import { Button } from "../../../../../../components/ui/button";
 import { Input } from "../../../../../../components/ui/input";
 import { useParams } from "next/navigation";
@@ -12,7 +11,21 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import BankTransferModal from "@/components/bank_details_modal";
-// --- END FIX ---
+
+// 1. Define Interfaces
+interface Bundle {
+  id: number;
+  title: string;
+  price: number;
+  discount_price: number;
+}
+
+interface UserInfo {
+  name: string;
+  email: string;
+  phone: string;
+  institution?: string;
+}
 
 export default function BundleCheckoutPage() {
   const { token } = useParams();
@@ -20,10 +33,12 @@ export default function BundleCheckoutPage() {
 
   // --- Adapted for Bundles ---
   const [bundleId, setBundleId] = useState<number | null>(null);
-  const [bundle, setBundle] = useState<any>(null);
+  // FIX: Use Bundle interface instead of any
+  const [bundle, setBundle] = useState<Bundle | null>(null);
   // --- End Adaptation ---
 
-  const [userInfo, setUserInfo] = useState<any>(null);
+  // FIX: Use UserInfo interface instead of any
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [alreadyPurchased, setAlreadyPurchased] = useState(false);
@@ -130,7 +145,8 @@ export default function BundleCheckoutPage() {
 
   // ✅ Submit order
   const handleSubmit = async () => {
-    if (!bundleId || !userInfo) return;
+    // Add check for bundle existence to satisfy TS
+    if (!bundleId || !userInfo || !bundle) return;
 
     setPlacingOrder(true);
 
@@ -200,7 +216,7 @@ export default function BundleCheckoutPage() {
 
 
   // ✅ While fetching
-  if (loading || alreadyPurchased || !bundle) { // Added !bundle check
+  if (loading || alreadyPurchased || !bundle || !userInfo) { // Added checks to satisfy TS
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader isLoading={true} className=""/>

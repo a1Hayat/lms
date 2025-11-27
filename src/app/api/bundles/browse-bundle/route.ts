@@ -1,5 +1,22 @@
 import { NextResponse } from "next/server";
-import mysql from "mysql2/promise";
+import mysql, { RowDataPacket } from "mysql2/promise";
+
+// Define the shape of the Bundle row
+interface BundleRow extends RowDataPacket {
+  id: number;
+  title: string;
+  description: string;
+  price: number;
+  discount_price: number;
+}
+
+// Define the shape of the Item row (course or resource)
+interface ItemRow extends RowDataPacket {
+  id: number;
+  title: string;
+  thumbnail: string;
+  type: 'course' | 'resource';
+}
 
 // Database connection function
 async function db() {
@@ -11,11 +28,13 @@ async function db() {
   });
 }
 
-export async function GET(req: Request) {
+// Removed 'req' since it was unused
+export async function GET() {
   const conn = await db();
   try {
     // 1. Fetch all bundles
-    const [bundles]: any = await conn.execute(
+    // Use generic <BundleRow[]> to type the result
+    const [bundles] = await conn.execute<BundleRow[]>(
       `SELECT id, title, description, price, discount_price FROM bundles ORDER BY created_at DESC`
     );
 
@@ -25,10 +44,11 @@ export async function GET(req: Request) {
 
     // 2. Fetch items for each bundle
     const bundlesWithItems = await Promise.all(
-      bundles.map(async (bundle: any) => {
+      bundles.map(async (bundle) => {
         // This query joins bundle_items with courses and resources tables
         // to get the details of each item in the bundle.
-        const [items]: any = await conn.execute(
+        // Use generic <ItemRow[]> to type the result
+        const [items] = await conn.execute<ItemRow[]>(
           `
           (SELECT 
             c.id, 

@@ -2,6 +2,20 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db"; // Assuming db is your mysql2 connection pool
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
+import { RowDataPacket } from "mysql2";
+
+// Define strict types for database rows
+interface OrderRow extends RowDataPacket {
+  user_id: number;
+  course_id: number | null;
+  resource_id: number | null;
+  bundle_id: number | null;
+}
+
+interface BundleItemRow extends RowDataPacket {
+  course_id: number | null;
+  resource_id: number | null;
+}
 
 export async function POST(req: Request) {
   try {
@@ -17,8 +31,8 @@ export async function POST(req: Request) {
     }
 
     // Fetch order details + order item. Now includes bundle_id
-    // We assume one item per order based on your checkout logic.
-    const [rows]: any = await db.query(
+    // FIX: Use generic <OrderRow[]> instead of : any
+    const [rows] = await db.query<OrderRow[]>(
       `SELECT o.user_id, oi.course_id, oi.resource_id, oi.bundle_id
        FROM orders o 
        JOIN order_items oi ON oi.order_id = o.id
@@ -43,7 +57,8 @@ export async function POST(req: Request) {
     // --- NEW BUNDLE ENROLLMENT LOGIC ---
     if (order.bundle_id) {
       // 1. Get all items (courses/resources) from the bundle
-      const [bundleItems]: any = await db.query(
+      // FIX: Use generic <BundleItemRow[]> instead of : any
+      const [bundleItems] = await db.query<BundleItemRow[]>(
         `SELECT course_id, resource_id FROM bundle_items WHERE bundle_id = ?`,
         [order.bundle_id]
       );

@@ -1,4 +1,3 @@
-// app/contact/page.tsx
 "use client"
 
 import { useState } from "react"
@@ -103,7 +102,7 @@ export default function ContactPage() {
             Contact Us
           </h1>
           <p className="mt-2 text-gray-600 dark:text-gray-300 text-base max-w-2xl mx-auto">
-            Have questions or need assistance? We're here to help. Reach out to
+            Have questions or need assistance? We&apos;re here to help. Reach out to
             our support team anytime.
           </p>
         </div>
@@ -116,7 +115,7 @@ export default function ContactPage() {
                 Send us a message
               </CardTitle>
               <p className="text-xs text-muted-foreground mt-1">
-                Fill out the form and we’ll get back to you shortly.
+                Fill out the form and we&apos;ll get back to you shortly.
               </p>
             </CardHeader>
             <CardContent>
@@ -220,7 +219,7 @@ export default function ContactPage() {
                 <div className="ml-3">
                   <h3 className="text-sm font-medium">Email Us</h3>
                   <p className="mt-0.5 text-blue-100 text-xs">
-                    Send us your queries and we’ll respond soon.
+                    Send us your queries and we&apos;ll respond soon.
                   </p>
                   <a
                     href="mailto:cswithbari.com"

@@ -1,38 +1,32 @@
-
 import * as React from "react"
-import { GalleryVerticalEnd } from "lucide-react"
 import logo from '@/components/icons/logo.png'
 
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-  SidebarRail,
 } from "@/components/ui/sidebar"
 import Image from "next/image"
 import { NavUser } from "./nav-users"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
-import { IconAdjustmentsCog, IconBook, IconBook2, IconBoxMultiple, IconBrandParsinta, IconCardboards, IconCast, IconCreditCard, IconGauge, IconHistoryToggle, IconMessagePause, IconSchool } from "@tabler/icons-react"
+import { IconBoxMultiple, IconBrandParsinta, IconCast, IconCreditCard, IconGauge, IconHistoryToggle, IconMessagePause, IconSchool } from "@tabler/icons-react"
 import { NavMain } from "./nav-main"
-import { Separator } from "./ui/separator"
+
+// Local interface to safely access the extended session properties
+interface ExtendedUser {
+  name?: string | null
+  email?: string | null
+  image?: string | null
+  role?: string
+}
 
 // This is sample data.
 const data = {
-    user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  
   navMain: [
       {
     title: "Dashboard",
@@ -147,16 +141,17 @@ const data = {
 export async function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const session = await getServerSession(authOptions)
 
-  // Fallback user info if no session
-  const user = session?.user || {
-    name: "Guest",
-    email: "guest@example.com",
-    image: "/avatars/default.jpg",
+  // FIX: Map session data to the shape expected by NavUser
+  // NavUser expects { name, email, avatar, role }, but NextAuth gives { name, email, image }
+  const user = {
+    name: session?.user?.name || "Guest",
+    email: session?.user?.email || "guest@example.com",
+    avatar: session?.user?.image || "/avatars/default.jpg",
+    // Use the local ExtendedUser interface instead of casting to 'any'
+    role: (session?.user as ExtendedUser)?.role || "guest",
   }
+
   return (
-    // <Sidebar {...props}>
-      
-    // </Sidebar>
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <SidebarMenu>

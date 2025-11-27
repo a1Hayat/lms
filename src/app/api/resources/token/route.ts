@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import jwt from "jsonwebtoken";
+import { RowDataPacket } from "mysql2";
+
+// Define the shape of the row returned by the query
+interface ResourceFileRow extends RowDataPacket {
+  file_path: string;
+}
 
 export async function POST(req: Request) {
   try {
@@ -12,7 +18,8 @@ export async function POST(req: Request) {
     }
 
     // ✅ Check if user is enrolled in this resource
-    const [rows]: any = await db.query(
+    // FIX: Use generic <ResourceFileRow[]> instead of : any
+    const [rows] = await db.query<ResourceFileRow[]>(
       `SELECT r.file_path
        FROM enrollments e
        JOIN resources r ON r.id = e.resource_id

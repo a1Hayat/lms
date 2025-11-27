@@ -8,7 +8,8 @@ export function AiAgentAlert() {
       <Sparkles className="h-4 w-4 text-primary!" />
       <Badge className="absolute -right-3 -top-3">Coming Soon</Badge>
       <AlertTitle className="font-bold">
-        Bari's AI Assistant is Landing Soon!
+        {/* FIX: Escaped apostrophe */}
+        Bari&apos;s AI Assistant is Landing Soon!
       </AlertTitle>
       <AlertDescription className="text-primary/90">
         Get ready to supercharge your O/A Level CS studies with instant help

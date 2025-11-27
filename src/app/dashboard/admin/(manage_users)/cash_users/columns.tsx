@@ -2,20 +2,54 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { users } from "../../../../../../types/users"
-import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar"
+import { Avatar, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { MoreHorizontal } from "lucide-react"
-import { IconArrowsMaximize, IconBasket, IconEdit, IconEye, IconFilePlus, IconTrash } from "@tabler/icons-react"
-import { Separator } from "@radix-ui/react-separator"
-import Edit_Student from "./edit_cash_user"
+import { IconEdit, IconEye, IconTrash } from "@tabler/icons-react"
 import { useState } from "react"
-import Edit_Admin from "./edit_cash_user"
 import Edit_cash_user from "./edit_cash_user"
 
-// This type is used to define the shape of our data.
-// You can use a Zod schema here if you want.
+// Helper component to safely use hooks like useState
+const ActionCell = ({ user }: { user: users }) => {
+  const [edit, setEdit] = useState(false)
 
+  return (
+    <>
+      <Edit_cash_user
+        isOpen={edit}
+        onClose={() => setEdit(false)}
+        user_id={user.id}
+        user_role={user.role}
+      />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <span className="sr-only">Open menu</span>
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setEdit(true)} className="cursor-pointer">
+            <IconEdit className="mr-2 h-4 w-4" /> 
+            <span>Edit</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="cursor-pointer">
+            <IconEye className="mr-2 h-4 w-4" /> 
+            <span>View Transactions</span>
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem className="text-red-500 dark:text-red-700 cursor-pointer focus:text-red-500 focus:bg-red-50 dark:focus:bg-red-950/20">
+            <IconTrash className="mr-2 h-4 w-4" /> 
+            <span>Delete</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
+  )
+}
 
 export const cash_users: ColumnDef<users>[] = [
    {
@@ -25,13 +59,11 @@ export const cash_users: ColumnDef<users>[] = [
       const user = row.original
       return (
         <div className="flex items-center gap-2">
-          <Avatar>
+          <Avatar className="h-8 w-8 rounded-md">
             <AvatarImage
               src={user.image}
               alt='img'
-              height={30}
-              width={30}
-              className="rounded-md"
+              className="rounded-md object-cover"
             />
           </Avatar>
           <span>{user.name ?? "—"}</span>
@@ -65,42 +97,6 @@ export const cash_users: ColumnDef<users>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => {
-      const user = row.original
-      const [edit, setEdit] = useState(false)
-      return (
-        <DropdownMenu>
-          <Edit_cash_user
-            isOpen={edit}
-            onClose={()=>setEdit(false)}
-            user_id={user.id}
-            user_role={user.role}
-          />
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>
-                <IconEdit/> <button onClick={()=>setEdit(true)}>Edit</button>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-            <IconEye/> <button>View Transactions</button>
-            </DropdownMenuItem>
-
-
-            <DropdownMenuSeparator/>
-
-            <DropdownMenuItem>
-                <IconTrash className="text-red-500 dark:text-red-700"/> <button className="text-red-500 dark:text-red-700">Delete</button>
-            </DropdownMenuItem>
-
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
+    cell: ({ row }) => <ActionCell user={row.original} />,
   },
 ]
-

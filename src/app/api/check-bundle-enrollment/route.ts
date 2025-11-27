@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import mysql from "mysql2/promise";
+import mysql, { RowDataPacket } from "mysql2/promise";
+
+// 1. Define Types
+interface ItemRow extends RowDataPacket {
+  course_id: number | null;
+  resource_id: number | null;
+}
 
 // Database connection function
 async function db() {
@@ -20,8 +26,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "Missing required data" }, { status: 400 });
     }
 
-    // 1. Get all item IDs in the bundle
-    const [bundleItems]: any = await conn.execute(
+    // 2. Get all item IDs in the bundle
+    // FIX: Use generic <ItemRow[]> instead of : any
+    const [bundleItems] = await conn.execute<ItemRow[]>(
       `SELECT course_id, resource_id FROM bundle_items WHERE bundle_id = ?`,
       [bundle_id]
     );
@@ -31,17 +38,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ purchased: true });
     }
 
-    // 2. Get all enrollment IDs for the user
-    const [userEnrollments]: any = await conn.execute(
+    // 3. Get all enrollment IDs for the user
+    // FIX: Use generic <ItemRow[]> instead of : any
+    const [userEnrollments] = await conn.execute<ItemRow[]>(
       `SELECT course_id, resource_id FROM enrollments WHERE user_id = ?`,
       [user_id]
     );
 
-    // 3. Create Sets for fast lookup
-    const userCourseIds = new Set(userEnrollments.map((e: any) => e.course_id).filter(Boolean));
-    const userResourceIds = new Set(userEnrollments.map((e: any) => e.resource_id).filter(Boolean));
+    // 4. Create Sets for fast lookup
+    // Typescript now infers 'e' correctly as ItemRow
+    const userCourseIds = new Set(userEnrollments.map((e) => e.course_id).filter(Boolean));
+    const userResourceIds = new Set(userEnrollments.map((e) => e.resource_id).filter(Boolean));
 
-    // 4. Check if user is enrolled in ALL bundle items
+    // 5. Check if user is enrolled in ALL bundle items
     let isFullyEnrolled = true;
     for (const item of bundleItems) {
       if (item.course_id && !userCourseIds.has(item.course_id)) {

@@ -1,11 +1,26 @@
-// app/api/videos/stream/route.ts
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 
 export const runtime = "nodejs";
 const VIDEO_SECRET = process.env.VIDEO_SECRET || "super_secret_key";
+
+// 1. Define Payload Type
+interface VideoTokenPayload extends JwtPayload {
+  videoPath: string;
+}
+
+// 2. Helper: Convert Node stream to Web stream
+function iteratorToStream(iterator: AsyncIterator<Uint8Array>) {
+  return new ReadableStream({
+    async pull(controller) {
+      const { value, done } = await iterator.next();
+      if (done) controller.close();
+      else controller.enqueue(value);
+    },
+  });
+}
 
 export async function GET(req: Request) {
   try {
@@ -13,9 +28,10 @@ export async function GET(req: Request) {
     const token = searchParams.get("token");
     if (!token) return NextResponse.json({ error: "Missing token" }, { status: 400 });
 
-    let decoded: any;
+    let decoded: VideoTokenPayload;
     try {
-      decoded = jwt.verify(token, VIDEO_SECRET);
+      // FIX: Cast to specific interface instead of 'any'
+      decoded = jwt.verify(token, VIDEO_SECRET) as VideoTokenPayload;
     } catch {
       return NextResponse.json({ error: "Invalid or expired token" }, { status: 403 });
     }
@@ -54,7 +70,9 @@ export async function GET(req: Request) {
       }
 
       const chunkSize = end - start + 1;
-      const file = fs.createReadStream(absolutePath, { start, end });
+      const fileStream = fs.createReadStream(absolutePath, { start, end });
+      const data = iteratorToStream(fileStream[Symbol.asyncIterator]());
+
       const headers = {
         "Content-Range": `bytes ${start}-${end}/${fileSize}`,
         "Accept-Ranges": "bytes",
@@ -63,12 +81,15 @@ export async function GET(req: Request) {
         "Cache-Control": "no-store",
       };
 
-      return new Response(file as any, { status: 206, headers });
+      // FIX: Pass the Web stream directly
+      return new Response(data, { status: 206, headers });
     }
 
     // Full file
-    const file = fs.createReadStream(absolutePath);
-    return new Response(file as any, {
+    const fileStream = fs.createReadStream(absolutePath);
+    const data = iteratorToStream(fileStream[Symbol.asyncIterator]());
+
+    return new Response(data, {
       status: 200,
       headers: {
         "Content-Length": fileSize.toString(),

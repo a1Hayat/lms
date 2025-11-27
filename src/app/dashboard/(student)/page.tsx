@@ -1,18 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import ProtectedRoute from "@/components/auth/protectedRoute";
 import Loader from "@/components/loader";
 import RoundProgress from "@/components/roundProgress";
 import { CourseCardSkeletonRow } from "@/components/loadingSkeleton";
-import { AiAgentComingSoon } from "@/components/ai-coming-soon";
 import { AiAgentAlert } from "@/components/ai-agent-alert";
 import { resources } from "../../../../types/resources";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import StudentWorkshopsPage from "./workshop_table";
 import { Badge } from "@/components/ui/badge";
+import { AppAlert } from "@/components/alerts";
+
+// 1. Define Interfaces
+interface DashboardItem {
+  id: number;
+  title: string;
+  // Fix: Allow thumbnail to be null or undefined to match resource/course types
+  thumbnail: string | null | undefined;
+  price: number;
+}
 
 // --------------------------------------------
 // Reusable List Component
@@ -25,9 +32,10 @@ function ItemList({
   viewMoreLink,
 }: {
   title: string;
-  items: any[];
+  // 2. Fix 'any' type
+  items: DashboardItem[];
   loading: boolean;
-  onClick: (item: any) => void;
+  onClick: (item: DashboardItem) => void;
   viewMoreLink: string;
 }) {
   const MAX_ITEMS = 3;
@@ -48,6 +56,8 @@ function ItemList({
                 className="bg-white dark:bg-neutral-900 rounded-lg shadow hover:shadow-lg transition p-3 flex flex-col gap-2 min-h-[210px] cursor-pointer"
                 onClick={() => onClick(item)}
               >
+                {/* 3. Suppress img warning */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={item.thumbnail || "/placeholder.jpg"}
                   alt={item.title}
@@ -90,13 +100,14 @@ function ItemList({
 // --------------------------------------------
 export default function StudentDashboard() {
   const { data: session } = useSession();
-  const router = useRouter()
+  const router = useRouter();
 
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [isLoadingResources, setIsLoadingResources] = useState(false);
 
-  const [courses, setCourses] = useState<any[]>([]);
-  const [resourcesList, setResourcesList] = useState<resources[]>([]);
+  // 4. Fix State Types
+  const [courses, setCourses] = useState<DashboardItem[]>([]);
+  const [resourcesList, setResourcesList] = useState<resources[]>([]); // resources imported type likely matches
 
   const loading = isLoadingCourses || isLoadingResources;
 
@@ -110,7 +121,8 @@ export default function StudentDashboard() {
   // --------------------------------------------
   // Fetch Courses
   // --------------------------------------------
-  const fetchCourses = async () => {
+  // 5. Use useCallback to fix dependency warnings
+  const fetchCourses = useCallback(async () => {
     try {
       setIsLoadingCourses(true);
 
@@ -125,7 +137,7 @@ export default function StudentDashboard() {
       if (!data.success) throw new Error("Courses fetch failed");
 
       return data.courses;
-    } catch (err) {
+    } catch {
       setAlert({
         show: true,
         type: "error",
@@ -136,12 +148,12 @@ export default function StudentDashboard() {
     } finally {
       setIsLoadingCourses(false);
     }
-  };
+  }, [session?.user?.id]);
 
   // --------------------------------------------
   // Fetch Resources
   // --------------------------------------------
-  const fetchResources = async () => {
+  const fetchResources = useCallback(async () => {
     try {
       setIsLoadingResources(true);
 
@@ -156,7 +168,7 @@ export default function StudentDashboard() {
       if (!data.success) throw new Error("Resources fetch failed");
 
       return data.resources;
-    } catch (err) {
+    } catch {
       setAlert({
         show: true,
         type: "error",
@@ -167,7 +179,7 @@ export default function StudentDashboard() {
     } finally {
       setIsLoadingResources(false);
     }
-  };
+  }, [session?.user?.id]);
 
   // --------------------------------------------
   // Load Dashboard Data
@@ -193,12 +205,13 @@ export default function StudentDashboard() {
     return () => {
       mounted = false;
     };
-  }, [session?.user?.id]);
+  }, [session?.user?.id, fetchCourses, fetchResources]); // Added dependencies
 
   // --------------------------------------------
   // Handlers
   // --------------------------------------------
-  const handleViewCourse = async (course_id: any) => {
+  // 6. Fix 'any' type and use router.push
+  const handleViewCourse = async (course_id: number) => {
     // token auth
       try {
         const res = await fetch("/api/courses/token", {
@@ -207,11 +220,12 @@ export default function StudentDashboard() {
           body: JSON.stringify({ courseId: course_id }),
         });
         const data = await res.json();
-        if (data.token) window.location.href=(`/dashboard/courses/${data.token}`);
+        if (data.token) router.push(`/dashboard/courses/${data.token}`);
         return;
-      } catch (err) {}
+      } catch {}
   };
-  const handleViewResource = async (resource_id: any) => {
+
+  const handleViewResource = async (resource_id: number) => {
     try {
         const res = await fetch("/api/courses/token", {
           method: "POST",
@@ -219,9 +233,9 @@ export default function StudentDashboard() {
           body: JSON.stringify({ courseId: resource_id }),
         });
         const data = await res.json();
-        if (data.token) window.location.href=(`/dashboard/resources/${data.token}`);
+        if (data.token) router.push(`/dashboard/resources/${data.token}`);
         return;
-      } catch (err) {}
+      } catch {}
   };
 
 
@@ -230,6 +244,13 @@ export default function StudentDashboard() {
   // --------------------------------------------
   return (
     <ProtectedRoute allowedRoles={["student"]}>
+      {/* 7. Use the Alert component to display errors */}
+      <AppAlert 
+        {...alert} 
+        open={alert.show} 
+        onClose={() => setAlert({ ...alert, show: false })} 
+      />
+
       {loading && <Loader isLoading className="h-screen" />}
 
       <div className="min-h-screen grid grid-cols-1 md:grid-cols-12 gap-6 text-gray-900 dark:text-white transition-colors">
@@ -292,15 +313,18 @@ export default function StudentDashboard() {
               title="My Courses"
               items={courses}
               loading={loading}
-              onClick={()=>courses.map((c)=>(handleViewCourse(c.id)))}
+              // 8. Fix incorrect map usage in onClick
+              onClick={(item) => handleViewCourse(item.id)}
               viewMoreLink="/dashboard/my-courses" 
             />
 
             <ItemList
               title="My Resources"
-              items={resourcesList}
+              // Fix: Cast resourcesList to match the interface, relying on the optional thumbnail
+              items={resourcesList as unknown as DashboardItem[]}
               loading={loading}
-              onClick={()=>resourcesList.map((r)=>(handleViewResource(r.id)))}
+              // 8. Fix incorrect map usage in onClick
+              onClick={(item) => handleViewResource(item.id)}
               viewMoreLink="/dashboard/my-resources"  
             />
 

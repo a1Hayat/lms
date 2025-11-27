@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
-import mysql from 'mysql2/promise';
 import { db } from '@/lib/db';
 
+// Define a minimal interface for MySQL errors to avoid using 'any'
+interface MySQLError extends Error {
+  code?: string;
+}
 
 export async function POST(req: Request) {
   try {
@@ -20,12 +23,15 @@ export async function POST(req: Request) {
     );
 
     return NextResponse.json({ success: true, message: 'Registered successfully' });
-  } catch (error: any) {
+  } catch (error) {
+    // Cast error to our interface to safely access 'code'
+    const mysqlError = error as MySQLError;
+
     // Check for duplicate entry error code (MySQL 1062)
-    if (error.code === 'ER_DUP_ENTRY') {
+    if (mysqlError.code === 'ER_DUP_ENTRY') {
       return NextResponse.json({ error: 'Already registered' }, { status: 409 });
     }
-    console.error('Registration Error:', error);
+    console.error('Registration Error:', mysqlError);
     return NextResponse.json({ error: 'Registration failed' }, { status: 500 });
   }
 }

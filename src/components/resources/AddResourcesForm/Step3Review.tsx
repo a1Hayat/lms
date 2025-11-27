@@ -2,10 +2,12 @@
 
 import React from "react"
 import { useFormContext } from "react-hook-form"
-import { CourseFormValues } from "@/app/dashboard/admin/resources/add/page"
+// Fix: Import the correct type exported from the page
+import { ResourceFormValues } from "@/app/dashboard/admin/resources/add/page"
 
 export default function Step3Review() {
-  const v = useFormContext<CourseFormValues>().getValues()
+  // Fix: Use the correct generic type
+  const v = useFormContext<ResourceFormValues>().getValues()
 
   return (
     <div>

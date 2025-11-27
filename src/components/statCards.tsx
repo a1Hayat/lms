@@ -4,8 +4,26 @@ import {
   IconFileText,
   IconPackages,
 } from "@tabler/icons-react";
+import { ReactNode } from "react";
 
-const StatCard = ({ title, value, icon, iconColor }: any) => (
+// 1. Define Props Interface
+interface StatCardProps {
+  title: string;
+  value: number;
+  icon: ReactNode;
+  iconColor: string;
+}
+
+// 2. Define Stats Interface
+interface Stats {
+  total_students: number;
+  total_courses: number;
+  total_resources: number;
+  total_bundles: number;
+}
+
+// 3. Apply Interface to Component
+const StatCard = ({ title, value, icon, iconColor }: StatCardProps) => (
   <div className="rounded-xl border border-gray-200 dark:border-neutral-800 p-5 flex items-center gap-4 bg-white dark:bg-neutral-900 shadow-sm hover:shadow-md transition-all duration-300">
     <div className={`p-3 rounded-lg  ${iconColor}`}>
       {icon}
@@ -21,7 +39,8 @@ const StatCard = ({ title, value, icon, iconColor }: any) => (
   </div>
 );
 
-export function StatCards({ stats }: { stats: any }) {
+// 4. Apply Stats Interface
+export function StatCards({ stats }: { stats: Stats }) {
   
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

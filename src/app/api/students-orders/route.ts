@@ -1,5 +1,15 @@
 import { NextResponse } from "next/server";
-import mysql from "mysql2/promise";
+import mysql, { RowDataPacket } from "mysql2/promise";
+
+// Define the shape of the database row
+interface StudentOrderRow extends RowDataPacket {
+  order_id: number;
+  final_amount: number;
+  created_at: Date;
+  payment_status: string;
+  item_type: string;
+  item_title: string | null;
+}
 
 async function db() {
   return await mysql.createConnection({
@@ -24,7 +34,8 @@ export async function POST(req: Request) {
     }
 
     // Fetch all orders for this user (regardless of payment status)
-    const [rows]: any = await conn.execute(
+    // FIX: Use generic <StudentOrderRow[]> instead of : any
+    const [rows] = await conn.execute<StudentOrderRow[]>(
       `
       SELECT
         o.id AS order_id,
@@ -56,7 +67,8 @@ export async function POST(req: Request) {
       [user_id]
     );
 
-    const orders = rows.map((row: any) => ({
+    // 'row' is now automatically typed as StudentOrderRow
+    const orders = rows.map((row) => ({
       id: row.order_id,
       final_amount: row.final_amount,
       created_at: row.created_at,

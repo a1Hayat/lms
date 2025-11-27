@@ -53,7 +53,8 @@ export default function Step1ResourceDetails() {
             )}
           />
 
-          {errors.level && <p className="text-sm text-red-600">{(errors.level as any).message}</p>}
+          {/* Fix: Removed unnecessary 'as any' casting */}
+          {errors.level && <p className="text-sm text-red-600">{errors.level.message}</p>}
         </div>
 
         <div>

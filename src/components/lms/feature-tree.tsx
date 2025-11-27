@@ -1,7 +1,5 @@
 'use client'
 
-
-'use client'
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -49,11 +47,15 @@ const StepArrow = () => (
 );
 
 export default function FeatureTree() {
-  const timelineRef = useRef(null);
+  // Fix: Type the ref properly
+  const timelineRef = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const line = timelineRef.current;
+
+    // Fix: Add null check
+    if (!line) return;
 
     const handleScroll = () => {
       const rect = line.getBoundingClientRect();

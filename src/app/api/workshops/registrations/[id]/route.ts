@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
-import mysql from 'mysql2/promise';
 import { db } from '@/lib/db';
 
-
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+// Update the type definition for params to be a Promise
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const workshopId = params.id;
+    // Await the params object to access the id
+    const { id } = await params;
+    const workshopId = id;
 
     // Join users table to get full info for every registration
     const query = `

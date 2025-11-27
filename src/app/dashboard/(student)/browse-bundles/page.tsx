@@ -1,12 +1,28 @@
 "use client";
 
-import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import ProtectedRoute from "../../../../components/auth/protectedRoute";
-import { Input } from "../../../..//components/ui/input";
+import { Input } from "../../../../components/ui/input";
 import { AppAlert } from "../../../../components/alerts";
 import { useRouter } from "next/navigation";
 import { BundleThumbnailPile } from "../../../../components/thumbnailPail";
+
+// --- Types ---
+interface BundleItem {
+  id: number;
+  title: string;
+  thumbnail: string;
+  type: 'course' | 'resource';
+}
+
+interface Bundle {
+  id: number;
+  title: string;
+  items: BundleItem[];
+  price: number;
+  discount_price: number;
+  description?: string;
+}
 
 // --- Helper Component for Skeleton Loading ---
 const BundleCardSkeleton = () => (
@@ -33,8 +49,9 @@ const BundleCardSkeletonRow = () => (
 export default function BrowseBundlesPage() {
   const router = useRouter();
 
-  const [bundles, setBundles] = useState<any[]>([]);
-  const [filtered, setFiltered] = useState<any[]>([]);
+  // FIX: Use Bundle[] instead of any[]
+  const [bundles, setBundles] = useState<Bundle[]>([]);
+  const [filtered, setFiltered] = useState<Bundle[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -59,12 +76,14 @@ export default function BrowseBundlesPage() {
         } else {
           throw new Error(data.message || "Failed to fetch bundles");
         }
-      } catch (err: any) {
+      } catch (err) {
+        // FIX: Handle unknown error type safely
+        const errorMessage = err instanceof Error ? err.message : "Could not load bundles";
         setAlert({
           show: true,
           type: "error",
           title: "Error",
-          description: err.message || "Could not load bundles",
+          description: errorMessage,
         });
       } finally {
         setLoading(false);
@@ -84,7 +103,8 @@ export default function BrowseBundlesPage() {
 
   // --- UPDATED FUNCTION (from your prompt) ---
   // ✅ Go to the new bundle details page
-  const handleViewBundle = async (id: any) => {
+  // FIX: Type 'id' as number
+  const handleViewBundle = async (id: number) => {
     try {
       // We pass the BUNDLE ID as the 'courseId' to this endpoint
       // as per your logic.

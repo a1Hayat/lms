@@ -12,13 +12,28 @@ import { AppAlert } from "@/components/alerts";
 import Loader from "@/components/loader";
 import BankTransferModal from "@/components/bank_details_modal";
 
+// 1. Define Interfaces
+interface Course {
+  id: number;
+  title: string;
+  price: number;
+}
+
+interface UserInfo {
+  name: string;
+  email: string;
+  phone: string;
+  institution?: string;
+}
+
 export default function CheckoutPage() {
   const { token } = useParams();
   const { data: session, status } = useSession();
 
   const [itemId, setItemId] = useState<number | null>(null);
-  const [course, setCourse] = useState<any>(null);
-  const [userInfo, setUserInfo] = useState<any>(null);
+  // 2. Fix State Types
+  const [course, setCourse] = useState<Course | null>(null);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [alreadyPurchased, setAlreadyPurchased] = useState(false);
@@ -119,7 +134,8 @@ export default function CheckoutPage() {
 
   // ✅ Submit order
   const handleSubmit = async () => {
-    if (!itemId || !userInfo) return;
+    // Add check to satisfy TS
+    if (!itemId || !userInfo || !course) return;
 
     setPlacingOrder(true);
 
@@ -184,8 +200,10 @@ export default function CheckoutPage() {
   const CloseBankModal = () => {
     window.location.href="/dashboard/orders"
   }
+  
   // ✅ While fetching
-  if (loading || alreadyPurchased) {
+  // 3. Added checks for !course and !userInfo to ensure they exist before rendering
+  if (loading || alreadyPurchased || !course || !userInfo) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader isLoading={true}  className=""/>

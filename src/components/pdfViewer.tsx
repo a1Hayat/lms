@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { getDocument, GlobalWorkerOptions, PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist";
+// Import specific types for better type safety
+import type { PDFDocumentLoadingTask, RenderTask } from "pdfjs-dist";
 import { Button } from "@/components/ui/button";
 import { PdfSkeletonView } from "./loadingSkeleton";
 import { Input } from "./ui/input";
@@ -11,10 +13,11 @@ GlobalWorkerOptions.workerSrc = "/pdf.worker.mjs";
 
 // Polyfill for PDF.js v5+
 if (typeof Promise.withResolvers === "undefined" && typeof window !== "undefined") {
-  // @ts-expect-error
+  // @ts-expect-error: Promise.withResolvers is a newer standard not yet in all TS lib definitions
   window.Promise.withResolvers = function () {
     let resolve: (value?: unknown) => void = () => {};
-    let reject: (reason?: any) => void = () => {};
+    // Fix: Use unknown instead of any to satisfy linter
+    let reject: (reason?: unknown) => void = () => {};
     const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
     return { promise, resolve, reject };
   };
@@ -33,12 +36,14 @@ export default function SecurePDFViewer({ fileUrl }: SecurePDFViewerProps) {
   const [progress, setProgress] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
 
-  const renderTaskRef = useRef<any>(null);
+  // Fix: Type the refs properly
+  const renderTaskRef = useRef<RenderTask | null>(null);
   const pageProxyRef = useRef<PDFPageProxy | null>(null);
   const touchStartX = useRef(0);
 
   useEffect(() => {
-    let loadingTask: any = null;
+    // Fix: Type loadingTask
+    let loadingTask: PDFDocumentLoadingTask | null = null;
     let isCancelled = false; 
 
     const loadPDF = async () => {
@@ -72,19 +77,22 @@ export default function SecurePDFViewer({ fileUrl }: SecurePDFViewerProps) {
         setPdfDoc(pdf);
         setNumPages(pdf.numPages);
         setCurrentPage(1);
-      } catch (err: any) {
+      } catch (err: unknown) {
+        // Fix: Cast unknown error to Error type for property access
+        const errorObj = err as Error;
+
         // 2. CRITICAL FIX: Ignore "Worker was destroyed" errors
         // These happen because React loads the component twice in dev mode.
-        if (err.message && err.message.includes("Worker was destroyed")) {
+        if (errorObj.message && errorObj.message.includes("Worker was destroyed")) {
             return;
         }
-        if (err.name === "AbortException") {
+        if (errorObj.name === "AbortException") {
             return;
         }
 
         console.error("PDF Load Error:", err);
         if (!isCancelled) {
-             setError(err.message || "Failed to load PDF.");
+             setError(errorObj.message || "Failed to load PDF.");
         }
       } finally {
         if (!isCancelled) setIsLoading(false);
@@ -104,9 +112,14 @@ export default function SecurePDFViewer({ fileUrl }: SecurePDFViewerProps) {
     };
   }, [fileUrl]);
 
-  const renderPage = async (pageNum: number) => {
+  // Fix: Wrap renderPage in useCallback to stabilize it as a dependency
+  const renderPage = useCallback(async (pageNum: number) => {
     if (!pdfDoc || !containerRef.current) return;
-    if (renderTaskRef.current) renderTaskRef.current.cancel();
+    
+    if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+    }
+    
     if (pageProxyRef.current) {
       pageProxyRef.current.cleanup();
       pageProxyRef.current = null;
@@ -140,23 +153,26 @@ export default function SecurePDFViewer({ fileUrl }: SecurePDFViewerProps) {
       const renderContext = { 
         canvasContext: context, 
         viewport,
-        canvas,
+        canvas, // Include canvas if needed by specific pdfjs versions
       };
       
-      // @ts-expect-error
       const renderTask = page.render(renderContext);
       renderTaskRef.current = renderTask;
       await renderTask.promise;
-    } catch (error: any) {
-      if (error.name !== "RenderingCancelledException") console.error("Render error:", error);
+    } catch (error: unknown) {
+      const err = error as Error;
+      if (err.name !== "RenderingCancelledException") {
+          console.error("Render error:", error);
+      }
     }
-  };
+  }, [pdfDoc]);
 
+  // Fix: Added renderPage to dependency array
   useEffect(() => {
     if (!pdfDoc) return;
     const rAF = requestAnimationFrame(() => renderPage(currentPage));
     return () => cancelAnimationFrame(rAF);
-  }, [currentPage, pdfDoc]);
+  }, [currentPage, pdfDoc, renderPage]);
 
   useEffect(() => {
     const container = containerRef.current;

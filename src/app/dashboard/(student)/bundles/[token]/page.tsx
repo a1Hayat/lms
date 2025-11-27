@@ -1,222 +1,342 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-// --- FIX: Corrected relative import paths ---
 import { Button } from "../../../../../components/ui/button";
-import { IconBook, IconFileText } from "@tabler/icons-react";
+import { Input } from "../../../../../components/ui/input";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { AppAlert } from "../../../../../components/alerts";
 import Loader from "../../../../../components/loader";
-// --- FIX: Corrected import path and component name ---
-import { BundleThumbnailPile } from "../../../../../components/thumbnailPail";
-// --- END FIX ---
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Card, CardContent } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import BankTransferModal from "@/components/bank_details_modal";
 
-// Define a type for our bundle
-type Bundle = {
+// 1. Define Interfaces
+interface Bundle {
   id: number;
   title: string;
-  description: string;
-  price: string;
-  discount_price: string;
-  items: Array<{
-    id: number;
-    title: string;
-    thumbnail: string;
-    type: 'course' | 'resource';
-  }>;
-};
+  price: number;
+  discount_price: number;
+}
 
-export default function BundlePage() {
-  const { token } = useParams(); // Get the bundle token from the URL
-  const { data: session } = useSession();
-  const router = useRouter();
+interface UserInfo {
+  name: string;
+  email: string;
+  phone: string;
+  institution?: string;
+}
 
+export default function BundleCheckoutPage() {
+  const { token } = useParams();
+  const { data: session, status } = useSession();
+
+  // --- Adapted for Bundles ---
+  const [bundleId, setBundleId] = useState<number | null>(null);
+  // FIX: Use Bundle interface instead of any
   const [bundle, setBundle] = useState<Bundle | null>(null);
-  const [activeTab, setActiveTab] = useState<"description" | "contents">("description");
-  const [loading, setLoading] = useState(false);
-  const [isEnrolled, setIsEnrolled] = useState(false);
-  // --- FIX: Added type for decoded ID ---
-  const [id, setDecodedId] = useState<number | null>(null);
+  // --- End Adaptation ---
 
-  // ✅ Decode token
+  // FIX: Use UserInfo interface instead of any
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [placingOrder, setPlacingOrder] = useState(false);
+  const [alreadyPurchased, setAlreadyPurchased] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("cash")
+  const [isBankModalOpen, setIsBankModalOpen] = useState(false)
+  const [order_id, setOrder_id] = useState<number>(0)
+
+  const [alert, setAlert] = useState({
+    show: false,
+    type: "info" as "success" | "error" | "warning" | "info",
+    title: "",
+    description: "",
+  });
+ 
+  // ✅ Decode token → get bundle id
   useEffect(() => {
     if (!token) return;
+
     const decode = async () => {
-      try {
-        const res = await fetch("/api/courses/decode", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
-        });
-        const data = await res.json();
-        // --- FIX: Use bundleId from decode, assuming it's returned as courseId ---
-        if (data.success) {
-          setDecodedId(data.courseId); // Assuming decode returns the ID as 'courseId'
-        } else {
-          console.error("Failed to decode token");
-        }
-      } catch (err) {
-        console.error("Decode error:", err);
+      // We use the same 'course' token decoder, as it just returns an ID
+      const res = await fetch("/api/courses/decode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.courseId) {
+        // --- Adapted for Bundles ---
+        setBundleId(data.courseId); // 'courseId' from decoder is our bundleId
+        // --- End Adaptation ---
+      } else {
+        window.location.href = "/dashboard";
       }
     };
+
     decode();
   }, [token]);
 
-
-  // ✅ Fetch Bundle Data
+  // ✅ Fetch bundle + user info
   useEffect(() => {
-    if (!id) return; // Wait for the ID to be decoded
+    if (!bundleId || status !== "authenticated") return;
+
+    // --- Adapted for Bundles ---
     const fetchBundle = async () => {
-      setLoading(true);
-      try {
-        // --- FIX: Call the correct API endpoint for a single bundle ---
-        const res = await fetch("/api/bundles/fetch-all", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ bundle_id: Number(id) }),
-        });
-        const data = await res.json();
-        if (data.success) {
-          setBundle(data.bundle);
-        } else {
-          console.error(data.message);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBundle();
-  }, [id]); // This effect now correctly depends on the decoded 'id'
+      const res = await fetch("/api/bundles/fetch-all", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bundle_id: bundleId }),
+      });
 
-  // ✅ Check if enrolled
+      const data = await res.json();
+      if (data.success) setBundle(data.bundle);
+    };
+    // --- End Adaptation ---
+
+    const fetchUser = async () => {
+      const res = await fetch("/api/users/fetch-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: session?.user?.id }),
+      });
+
+      const data = await res.json();
+      setUserInfo(data.user_info?.[0]);
+    };
+
+    // --- Adapted for Bundles ---
+    Promise.all([fetchBundle(), fetchUser()]).then(() => setLoading(false));
+    // --- End Adaptation ---
+  }, [bundleId, status, session]);
+
+  // ✅ Auto-check if already purchased
   useEffect(() => {
-    if (!session?.user?.id || !id) return;
-    const checkEnroll = async () => {
+    if (!bundleId || !userInfo) return;
+
+    const checkPurchase = async () => {
+      // --- Adapted for Bundles ---
       const res = await fetch("/api/check-bundle-enrollment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: session.user.id, bundle_id: Number(id) }),
+        body: JSON.stringify({ user_id: session?.user?.id, bundle_id: bundleId }),
       });
+      // --- End Adaptation ---
+
       const data = await res.json();
+
       if (data.purchased) {
-        setIsEnrolled(true);
+        setAlreadyPurchased(true);
+
+        setAlert({
+          show: true,
+          type: "warning",
+          title: "Already Purchased ✅",
+          description: "You are already enrolled in all items in this bundle.",
+        });
+
+        setTimeout(() => (window.location.href = "/dashboard"), 1400);
       }
     };
-    checkEnroll();
-  }, [session, id]);
 
-  // ✅ Go to checkout
-  const handleCheckout = async () => {
-    setLoading(true);
-    router.push(`/dashboard/bundles/${token}/checkout`);
-  };
-  
-  // ✅ Go to dashboard
-  const handleViewDashboard = async () => {
-    router.push(`/dashboard`);
+    checkPurchase();
+  }, [bundleId, userInfo, session]);
+
+  // ✅ Submit order
+  const handleSubmit = async () => {
+    // Add check for bundle existence to satisfy TS
+    if (!bundleId || !userInfo || !bundle) return;
+
+    setPlacingOrder(true);
+
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // --- Adapted for Bundles ---
+        body: JSON.stringify({
+          id: bundleId,       // The ID of the item
+          type: "bundle",     // The type
+          name: userInfo.name,
+          email: userInfo.email,
+          phone: userInfo.phone,
+          paymentMethod,
+        }),
+        // --- End Adaptation ---
+      });
+
+      const data = await res.json();
+      setOrder_id(data.orderId)
+      if (data.status == 'success') {
+
+        await fetch("/api/send-mail", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: userInfo.email,
+            subject: "Your Payment Receipt - CSWithBari",
+            type: "paymentReceipt",
+            payload: {
+              name: userInfo.name,
+              itemName: bundle.title,
+              totalPrice: "PKR " + bundle.price,
+              orderId: data.orderId,
+              paymentMethod
+            }
+          })
+        });
+
+        setAlert({
+        show: true,
+        type: "success",
+        title: "Order Placed",
+        description: data.message || "Your cash order has been recorded.",
+      });
+
+      setIsBankModalOpen(true)
+      }
+
+
+    } catch {
+      setAlert({
+        show: true,
+        type: "error",
+        title: "Failed",
+        description: "Order could not be placed. Try again.",
+      });
+    }
+
+    setPlacingOrder(false);
   };
 
-  if (loading || !id) { // Show loader while decoding or fetching
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader isLoading className="" />
-      </div>
-    );
+    const CloseBankModal = () => {
+    window.location.href="/dashboard/orders"
   }
 
-  if (!bundle) { // Handle case where bundle isn't found after loading
+
+  // ✅ While fetching
+  if (loading || alreadyPurchased || !bundle || !userInfo) { // Added checks to satisfy TS
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p>Bundle not found.</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader isLoading={true} className=""/>
       </div>
     );
   }
 
   return (
-    <div className="w-[90%] sm:w-[85%] lg:w-[80%] mx-auto p-4 sm:p-6 lg:p-10 grid grid-cols-1 lg:grid-cols-3 gap-8 text-gray-900 dark:text-gray-100">
+    <>
+      {/* ✅ Global Alert */}
+      <AppAlert
+        type={alert.type}
+        title={alert.title}
+        description={alert.description}
+        open={alert.show}
+        onClose={() => setAlert({ ...alert, show: false })}
+      />
 
-      <div className="lg:col-span-2">
-        <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-gray-200 dark:border-[#1f1f1f] shadow-sm group">
-          {/* Use the new thumbnail pile component */}
-          <BundleThumbnailPile items={bundle.items} />
-        </div>
+      <div className=" flex items-center justify-center p-6">
+        <div className="w-full max-w-5xl bg-white dark:bg-[#0f0f0f] rounded-xl shadow-lg p-6 grid md:grid-cols-2 gap-6">
+          
+          {/* ✅ Left — User Info */}
+          <div>
+            <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
+              Confirm Your Order
+            </h2>
 
-        {/* Tabs */}
-        <div className="mt-6 flex gap-5 border-b border-gray-200 dark:border-[#1f1f1f] overflow-x-auto">
-          {["description", "contents"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab as any)}
-              className={`pb-3 text-sm sm:text-base font-medium ${
-                activeTab === tab
-                  ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-              }`}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-5">
-          {activeTab === "description" ? (
-            <p className="text-gray-700 dark:text-gray-300">{bundle.description}</p>
-          ) : (
-            <div className="space-y-3">
-              <h3 className="text-lg font-semibold mb-2">Items in this bundle:</h3>
-              {bundle.items?.map((item, i) => (
-                <div
-                  key={i}
-                  className="border border-gray-200 dark:border-[#1f1f1f] rounded-lg p-3 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-neutral-800 transition"
-                >
-                  <div className="flex gap-x-3 items-center">
-                    {item.type === 'course' ? 
-                      <IconBook className="text-blue-500" /> : 
-                      <IconFileText className="text-green-500" />
-                    }
-                    <span className="truncate w-48 sm:w-auto">{item.title}</span>
-                  </div>
-                  <span className="text-sm text-gray-500 capitalize shrink-0">{item.type}</span>
-                </div>
-              ))}
+            <div className="space-y-3 mb-4">
+              
+              <Input value={userInfo.name} disabled />
+              <Input value={userInfo.email} disabled />
+              <Input value={userInfo.phone ?? ""} disabled />
+              <Input value={userInfo.institution ?? ""} disabled />
+              <p className="text-sm py-3 flex justify-self-center">Information not correct? <Button 
+              onClick={()=> window.location.href="/dashboard/settings"}
+              variant={'link'} className="-m-2 underline">Change now</Button></p>
             </div>
-          )}
+
+            <Button
+              className="w-full bg-blue-600 capitalize hover:bg-blue-700 text-white flex items-center justify-center gap-2"
+              onClick={handleSubmit}
+              disabled={placingOrder}
+            >
+              {placingOrder && <Loader isLoading={placingOrder} className=""/>}
+              {placingOrder ? "Placing..." : `Confirm Order`}
+            </Button>
+          </div>
+
+          <BankTransferModal
+            orderId={order_id}
+            amount={bundle.discount_price}
+            isOpen={isBankModalOpen}
+            onClose={CloseBankModal}
+            whatsappNumber="+92 332 4040614"
+          />
+
+          {/* ✅ Right — Order Summary */}
+          <div className=" p-5 border-l">
+            <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">
+              Order Summary
+            </h3>
+
+            <div className="space-y-2 bg-gray-100 dark:bg-[#1f1f1f] p-5 rounded-xl text-gray-800 dark:text-gray-200">
+              <p><strong>Bundle:</strong> {bundle.title}</p>
+              <p className="line-through text-sm"><strong>Orignal Price:</strong> Rs {new Intl.NumberFormat('en-PK').format(bundle.price)}</p>
+              <p className="text-blue-500"><strong>Discounted Price:</strong> Rs {new Intl.NumberFormat('en-PK').format(bundle.discount_price)}</p>
+              <p className="capitalize"><strong>Payment Method:</strong> {paymentMethod}</p>
+              <RadioGroup 
+                defaultValue="cash"
+                className="grid grid-cols-1 gap-4 md:grid-cols-2 mt-3"
+                // 3. Set the value from your state
+                value={paymentMethod}
+                // 4. Update the state whenever the value changes
+                onValueChange={(newValue) => setPaymentMethod(newValue)}
+              >
+                {/* Option 1: Cash (Default) */}
+                <Label
+                  htmlFor="cash"
+                  className="flex cursor-pointer rounded-lg"
+                >
+                  <Card className="w-full border-2 border-muted bg-popover transition-all [&:has([data-state=checked])]:border-primary">
+                    <CardContent className="flex items-center justify-between px-4">
+                      <div className="space-y-1">
+                        <p className="font-semibold">Cash</p>
+                        <p className="text-xs text-muted-foreground">
+                          Pay at any Vision Academy Branch with cash
+                        </p>
+                      </div>
+                      <RadioGroupItem value="cash" id="cash" />
+                    </CardContent>
+                  </Card>
+                </Label>
+
+                {/* Option 2: Bank */}
+                <Label
+                  htmlFor="cash"
+                  className="flex cursor-pointer rounded-lg"
+                >
+                  
+                  <Card className="w-full border-2 border-muted bg-popover transition-all [&:has([data-state=disabled])]:opacity-50 [&:has([data-state=checked])]:border-primary">
+                    <CardContent className="flex items-center justify-between px-4">
+                      <div className="space-y-1">
+                        <p className="font-semibold">Bank Transfer</p>
+                        <p className="text-xs text-muted-foreground">
+                          Transfer to the bank account after placing order. 
+                        </p>
+                      </div>
+                      <RadioGroupItem value="bank" id="bank" />
+                    </CardContent>
+                  </Card>
+                  
+                </Label>
+              </RadioGroup>
+              <p className="text-xs text-center text-blue-500 mt-">Payment instructions will be displayed / sent on your email after placing order.  </p>
+            
+            </div>
+          </div>
+
         </div>
       </div>
-
-      {/* Sidebar */}
-      <aside className="border dark:border-[#1f1f1f] rounded-xl p-6 shadow-sm h-fit sticky top-10">
-        <h1 className="text-2xl font-semibold">{bundle.title}</h1>
-        
-        {/* Pricing */}
-        <div className="flex items-baseline gap-2 mt-3">
-          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-            Rs. {new Intl.NumberFormat('en-PK').format(bundle.discount_price)}
-          </p>
-          <p className="text-md text-gray-500 line-through">
-            Rs. {new Intl.NumberFormat('en-PK').format(bundle.price)}
-          </p>
-        </div>
-
-        {/* ✅ Button Logic */}
-        {isEnrolled ? (
-          <Button onClick={handleViewDashboard} className="mt-5 w-full bg-green-600 hover:bg-green-700 text-white py-3">
-            Purchased
-          </Button>
-        ) : (
-          <Button onClick={handleCheckout} className="mt-5 w-full bg-blue-500 hover:bg-blue-600 text-white py-3">
-            Buy Bundle
-          </Button>
-        )}
-
-        <div className="mt-4 text-center">
-          <a href="/help" className="text-blue-500 dark:text-blue-400 text-sm hover:underline">
-            Need Help?
-          </a>
-        </div>
-      </aside>
-    </div>
+    </>
   );
 }

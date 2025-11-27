@@ -20,7 +20,8 @@ export type ResourceFormValues = {
   price?: number | ""
   level: "o-level" | "as-level" | "a-level"
   thumbnail?: File | null
-  file_path?: File | null
+  // Fix: Removed '?' to match schema requirement (key must exist, value can be null)
+  file_path: File | null
 }
 
 // -------------------
@@ -31,7 +32,8 @@ const resourceSchema = z.object({
   description: z.string().optional(),
   price: z.union([z.number().min(0), z.literal("")]).optional(),
   level: z.enum(["o-level", "as-level", "a-level"]),
-  file_path: z.instanceof(File, "PDF file is required"),
+  // This expects file_path key to exist. refine() handles the validation.
+  file_path: z.any().refine((val) => val instanceof File, { message: "PDF file is required" }),
   thumbnail: z.any().optional(),
 })
 
@@ -100,14 +102,19 @@ export default function AddResourceForm() {
   // Navigation
   // -------------------
   const next = async () => {
+    // Only validate fields relevant to the current step
     const stepFields = {
       1: ["title", "description", "price", "level", "thumbnail"],
       2: ["file_path"],
     } as const
 
-    const fieldsToValidate = stepFields[step]
-    const isStepValid = await trigger(fieldsToValidate)
-    if (!isStepValid) return
+    // Explicitly check step range to satisfy TypeScript indexing
+    if (step === 1 || step === 2) {
+      const fieldsToValidate = stepFields[step]
+      const isStepValid = await trigger(fieldsToValidate)
+      if (!isStepValid) return
+    }
+    
     setStep((s) => Math.min(3, s + 1))
   }
 

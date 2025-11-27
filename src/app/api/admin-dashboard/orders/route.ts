@@ -1,8 +1,25 @@
+// src/app/api/admin-dashboard/orders/route.ts
 import { NextResponse } from "next/server";
-import mysql from "mysql2/promise";
+import mysql, { RowDataPacket } from "mysql2/promise"; // Import RowDataPacket
 import { getServerSession } from "next-auth";
-// @ts-ignore
 import { authOptions } from "../../auth/[...nextauth]/route";
+
+// Define the shape of the data returned by your SQL query
+interface OrderRow extends RowDataPacket {
+  id: number;
+  created_at: Date;
+  final_amount: number;
+  payment_status: string;
+  user_name: string;
+  user_email: string;
+  processed_by_name: string | null;
+  course_id: number | null;
+  resource_id: number | null;
+  bundle_id: number | null;
+  course_title: string | null;
+  resource_title: string | null;
+  bundle_title: string | null;
+}
 
 // Database connection
 async function db() {
@@ -14,7 +31,8 @@ async function db() {
   });
 }
 
-export async function POST(req: Request) {
+// Removed 'req' since it was unused
+export async function POST() {
   const conn = await db();
   try {
     const session = await getServerSession(authOptions);
@@ -22,7 +40,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
-    const [rows]: any = await conn.execute(
+    // Add <OrderRow[]> generic here to tell TS what the rows look like
+    const [rows] = await conn.execute<OrderRow[]>(
       `
       SELECT 
         o.id,
@@ -49,7 +68,8 @@ export async function POST(req: Request) {
     `
     );
 
-    const orders = rows.map((order: any) => ({
+    // Now 'order' is automatically typed as OrderRow
+    const orders = rows.map((order) => ({
       id: order.id,
       created_at: order.created_at,
       final_amount: order.final_amount,

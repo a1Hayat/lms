@@ -1,4 +1,3 @@
-
 import { Metadata } from "next"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../../api/auth/[...nextauth]/route"
@@ -20,8 +19,6 @@ import {
 } from "@/components/ui/sheet"
 import {
   IconMenu2,
-  IconBook,
-  IconLibrary,
   IconShoppingBag,
   IconCompass,
   IconBrandParsinta,
@@ -69,7 +66,7 @@ export default async function RootLayout({
                 <div className="flex items-center gap-4">
                   {/* Mobile Hamburger Menu */}
                   <div className="md:hidden">
-                    <MobileMenu user={user} />
+                    <MobileMenu />
                   </div>
 
                   {/* Logo */}
@@ -160,7 +157,7 @@ export default async function RootLayout({
 }
 
 /* 📱 Mobile Menu Component */
-function MobileMenu({ user }: { user: any }) {
+function MobileMenu() {
   return (
     <Sheet>
       <SheetTrigger asChild>

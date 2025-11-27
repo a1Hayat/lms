@@ -6,9 +6,26 @@ import { Button } from "@/components/ui/button";
 import Loader from "@/components/loader";
 import { AppAlert } from "@/components/alerts";
 
+// 1. Define Interface
+interface CashPortalOrder {
+  id: number;
+  final_amount: number;
+  payment_status: string;
+  user?: {
+    name: string;
+    email: string;
+    phone: string;
+  };
+  item?: {
+    type: string;
+    title: string;
+  };
+}
+
 export default function CashPortalPage() {
   const [orderId, setOrderId] = useState("");
-  const [order, setOrder] = useState<any>(null);
+  // 2. Fix State Type
+  const [order, setOrder] = useState<CashPortalOrder | null>(null);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
 
@@ -43,7 +60,8 @@ export default function CashPortalPage() {
       } else {
         setOrder(data.order);
       }
-    } catch (err) {
+    } catch {
+      // 3. Removed unused 'err'
       setAlert({
         show: true,
         type: "error",
@@ -101,7 +119,8 @@ export default function CashPortalPage() {
         setOrder(null);
         setOrderId("");
       }
-    } catch (err) {
+    } catch {
+      // 4. Removed unused 'err'
       setAlert({
         show: true,
         type: "error",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { courses } from "../../../../../../types/courses";
 import { Button } from "@/components/ui/button";
@@ -9,13 +9,16 @@ import { IconBrandParsinta } from "@tabler/icons-react";
 import Loader from "@/components/loader";
 import Image from "next/image";
 
+// 1. Define specific Tab type
+type Tab = "description" | "curriculum";
+
 export default function CoursePage() {
   const { token } = useParams(); 
   const { data: session } = useSession();
-  const router = useRouter();
+  // 2. Removed unused 'router' hook
 
   const [course, setCourse] = useState<courses | null>(null);
-  const [activeTab, setActiveTab] = useState<"description" | "curriculum">("description");
+  const [activeTab, setActiveTab] = useState<Tab>("description");
   const [loading, setLoading] = useState(false);
   const [decodedId, setDecodedId] = useState<number | null>(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
@@ -110,20 +113,24 @@ export default function CoursePage() {
       ? "A Level | A-2"
       : course.level;
 
+  // 3. Define tabs array with Tab type
+  const tabs: Tab[] = ["description", "curriculum"];
+
   return (
     <div className="w-[90%] sm:w-[85%] lg:w-[80%] mx-auto p-4 sm:p-6 lg:p-10 grid grid-cols-1 lg:grid-cols-3 gap-8 text-gray-900 dark:text-gray-100">
 
       <div className="lg:col-span-2">
-        <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-gray-200 dark:border-[#1f1f1f] shadow-sm">
+        <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-gray-200 dark:border-[#1f1f1f] shadow-sm">
           <Image src={course.thumbnail} alt={course.title} fill className="object-cover object-center" />
         </div>
 
         {/* Tabs */}
         <div className="mt-6 flex gap-5 border-b border-gray-200 dark:border-[#1f1f1f] overflow-x-auto">
-          {["description", "curriculum"].map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab as any)}
+              // 4. No need for 'as any' since 'tab' is strictly typed
+              onClick={() => setActiveTab(tab)}
               className={`pb-3 text-sm sm:text-base font-medium ${
                 activeTab === tab
                   ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"

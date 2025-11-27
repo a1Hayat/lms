@@ -161,7 +161,8 @@ export default function CoursePlayerPage() {
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{course.level}</p>
 
         <div className="space-y-2">
-          {course.curriculum.map((lesson) => (
+          {/* FIX: Added optional chaining '?' to safely access curriculum */}
+          {course.curriculum?.map((lesson) => (
             <div
               key={lesson.id}
               onClick={() => setActiveLesson(lesson)}

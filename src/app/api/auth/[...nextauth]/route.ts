@@ -1,11 +1,26 @@
-import NextAuth from "next-auth";
+import NextAuth, { NextAuthOptions, User } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { compare } from "bcryptjs";
 import mysql from "mysql2/promise";
+import type { RowDataPacket } from "mysql2";
 
-export const authOptions = {
-  session: { strategy: "jwt" },
+// Define the shape of the database user row
+interface UserRow extends RowDataPacket {
+  id: number;
+  name: string;
+  email: string;
+  password?: string;
+  role?: string;
+}
+
+// Define custom user interface to include role
+interface CustomUser extends User {
+  role?: string;
+}
+
+export const authOptions: NextAuthOptions = {
+  session: { strategy: "jwt" as const },
 
   providers: [
     // --- Email + Password ---
@@ -26,7 +41,7 @@ export const authOptions = {
           database: process.env.DB_NAME!,
         });
 
-        const [rows]: any = await connection.execute(
+        const [rows] = await connection.execute<UserRow[]>(
           "SELECT id, name, email, password, role FROM users WHERE email = ? LIMIT 1",
           [credentials.email]
         );
@@ -35,7 +50,7 @@ export const authOptions = {
         const user = rows[0];
         if (!user) throw new Error("No user found");
 
-        const isValid = await compare(credentials.password, user.password);
+        const isValid = await compare(credentials.password, user.password as string);
         if (!isValid) throw new Error("Invalid password");
 
         return {
@@ -59,7 +74,8 @@ export const authOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = user.role || "student";
+        // Fix: Cast to CustomUser interface instead of 'any'
+        token.role = (user as CustomUser).role || "student";
       }
       return token;
     },
@@ -68,14 +84,14 @@ export const authOptions = {
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role as string;
+        // Fix: Cast to CustomUser interface instead of 'any'
+        (session.user as CustomUser).role = token.role as string;
       }
       return session;
     },
 
     // --- Redirect after login ---
-    async redirect({ url, baseUrl }) {
-      // When a user logs in, redirect based on role
+    async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
       if (url.startsWith("/")) return `${baseUrl}${url}`;
 
       try {

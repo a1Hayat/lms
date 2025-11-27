@@ -15,6 +15,14 @@ interface Item {
   price: number;
 }
 
+// 1. Define Props Interface for the Helper Component
+interface MultiSelectProps {
+  label: string;
+  items: Item[];
+  selected: Item[];
+  setSelected: (items: Item[]) => void;
+}
+
 export default function CreateBundle() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -57,7 +65,8 @@ export default function CreateBundle() {
     setOriginalPrice(total);
   }, [selectedCourses, selectedResources]);
 
-  const submitBundle = async (e: any) => {
+  // 2. Fix Event Type
+  const submitBundle = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name || !discountedPrice || (selectedCourses.length === 0 && selectedResources.length === 0)) {
@@ -102,14 +111,16 @@ export default function CreateBundle() {
      setLoading(false)
   };
 
-  const MultiSelect = ({ label, items, selected, setSelected }: any) => (
+  // 3. Fix Component Props Type
+  const MultiSelect = ({ label, items, selected, setSelected }: MultiSelectProps) => (
     <div>
       <label className="block text-sm font-medium mb-1 dark:text-gray-200">{label}</label>
 
       <Listbox value={selected} onChange={setSelected} multiple>
         <div className="relative">
           <Listbox.Button className="w-full text-sm border dark:bg-[#0f0f0f] bg-gray-50 dark:border-[#333] px-3 py-2 rounded-md text-left dark:text-white">
-            {selected.length === 0 ? `Select ${label}` : selected.map((s: any) => s.title).join(", ")}
+            {/* 4. Fix implicit any in map by relying on Item[] type from props */}
+            {selected.length === 0 ? `Select ${label}` : selected.map((s) => s.title).join(", ")}
           </Listbox.Button>
 
           <Transition as={Fragment} enter="transition duration-100" enterFrom="opacity-0" enterTo="opacity-100">

@@ -1,5 +1,22 @@
 import { NextResponse } from "next/server";
-import mysql from "mysql2/promise";
+import mysql, { RowDataPacket } from "mysql2/promise";
+
+// Define the shape of the Bundle row
+interface BundleRow extends RowDataPacket {
+  id: number;
+  title: string;
+  description: string;
+  price: number;
+  discount_price: number;
+}
+
+// Define the shape of the Item row
+interface ItemRow extends RowDataPacket {
+  id: number;
+  title: string;
+  thumbnail: string;
+  type: 'course' | 'resource';
+}
 
 // Database connection function
 async function db() {
@@ -21,7 +38,8 @@ export async function POST(req: Request) {
     }
 
     // 1. Fetch the bundle details
-    const [bundleRows]: any = await conn.execute(
+    // FIX: Use generic <BundleRow[]> instead of : any
+    const [bundleRows] = await conn.execute<BundleRow[]>(
       `SELECT id, title, description, price, discount_price 
        FROM bundles 
        WHERE id = ?`,
@@ -34,7 +52,8 @@ export async function POST(req: Request) {
     const bundle = bundleRows[0];
 
     // 2. Fetch all items (courses and resources) in the bundle
-    const [items]: any = await conn.execute(
+    // FIX: Use generic <ItemRow[]> instead of : any
+    const [items] = await conn.execute<ItemRow[]>(
       `
       (SELECT 
         c.id, 

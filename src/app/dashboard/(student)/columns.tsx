@@ -4,8 +4,7 @@ import { ColumnDef } from "@tanstack/react-table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { MoreHorizontal } from "lucide-react"
-import { IconClick, IconEdit, IconEye } from "@tabler/icons-react"
-import { useState } from "react"
+import { IconClick } from "@tabler/icons-react"
 import type { session } from "../../../../types/sessions"
 
 export const upcoming_session: ColumnDef<session>[] = [
@@ -44,9 +43,8 @@ export const upcoming_session: ColumnDef<session>[] = [
   {
     id: "actions",
     header: "",
-    cell: ({ row }) => {
-      const [edit, setEdit] = useState(false)
-
+    // Removed unused 'row' and invalid hook usage
+    cell: () => {
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -56,7 +54,8 @@ export const upcoming_session: ColumnDef<session>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setEdit(true)} className="gap-2">
+            {/* Placeholder onClick logic since state was unused */}
+            <DropdownMenuItem onClick={() => {}} className="gap-2">
               <IconClick size={16} /> Apply
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -65,3 +64,5 @@ export const upcoming_session: ColumnDef<session>[] = [
     },
   },
 ]
+
+

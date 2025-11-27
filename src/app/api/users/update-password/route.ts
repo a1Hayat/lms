@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
-import mysql from "mysql2/promise";
+import mysql, { RowDataPacket } from "mysql2/promise";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import bcrypt from "bcrypt";
+
+// Define the shape of the database row
+interface UserPasswordRow extends RowDataPacket {
+  password: string;
+}
 
 async function db() {
   return await mysql.createConnection({
@@ -29,7 +34,8 @@ export async function POST(req: Request) {
     }
 
     // 1. Get the user's current hashed password
-    const [rows]: any = await conn.execute(
+    // FIX: Use generic <UserPasswordRow[]> instead of : any
+    const [rows] = await conn.execute<UserPasswordRow[]>(
       `SELECT password FROM users WHERE id = ?`,
       [user_id]
     );

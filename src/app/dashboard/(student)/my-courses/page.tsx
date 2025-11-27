@@ -1,19 +1,28 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import ProtectedRoute from "@/components/auth/protectedRoute";
 import { Input } from "@/components/ui/input";
 import { AppAlert } from "@/components/alerts";
 import { useRouter } from "next/navigation";
 import { CourseCardSkeletonRow } from "@/components/loadingSkeleton";
 
+// 1. Define Interface
+interface Course {
+  id: number;
+  title: string;
+  thumbnail: string | null;
+  price: number;
+}
+
 export default function MyCoursesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [courses, setCourses] = useState<any[]>([]);
-  const [filtered, setFiltered] = useState<any[]>([]);
+  // 2. Fix State Types
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [filtered, setFiltered] = useState<Course[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -25,14 +34,17 @@ export default function MyCoursesPage() {
   });
 
   // ✅ Get enrolled courses
-  const fetchCourses = async () => {
+  // 3. Use useCallback to fix dependency warning
+  const fetchCourses = useCallback(async () => {
+    if (!session?.user?.id) return;
+
     try {
       setLoading(true);
 
       const res = await fetch("/api/courses/enrolled", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: session?.user?.id }),
+        body: JSON.stringify({ user_id: session.user.id }),
       });
 
       const data = await res.json();
@@ -50,7 +62,8 @@ export default function MyCoursesPage() {
       setCourses(data.courses);
       setFiltered(data.courses);
 
-    } catch (err) {
+    } catch {
+      // 4. Removed unused 'err' variable
       setAlert({
         show: true,
         type: "error",
@@ -60,10 +73,11 @@ export default function MyCoursesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [session?.user?.id]);
 
   // ✅ View Course with token
-  const handleViewCourse = async (course: any) => {
+  // 5. Fix argument type
+  const handleViewCourse = async (course: Course) => {
     try {
       const res = await fetch("/api/courses/token", {
         method: "POST",
@@ -81,7 +95,7 @@ export default function MyCoursesPage() {
   // ✅ run fetch when auth ready
   useEffect(() => {
     if (status === "authenticated") fetchCourses();
-  }, [status]);
+  }, [status, fetchCourses]); // Added fetchCourses dependency
 
   // ✅ search filter
   useEffect(() => {
@@ -122,6 +136,8 @@ export default function MyCoursesPage() {
                 className="bg-white dark:bg-neutral-900 rounded-lg shadow hover:shadow-lg transition p-3 flex flex-col gap-2 min-h-[210px] cursor-pointer"
                 onClick={() => handleViewCourse(course)}
               >
+                {/* 6. Suppress next/image warning for now */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={course.thumbnail || "/placeholder.jpg"}
                   alt={course.title}

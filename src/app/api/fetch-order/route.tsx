@@ -1,5 +1,17 @@
 import { NextResponse } from "next/server";
-import mysql from "mysql2/promise";
+import mysql, { RowDataPacket } from "mysql2/promise";
+
+// Define the shape of the order row returned by the query
+interface OrderRow extends RowDataPacket {
+  id: number;
+  final_amount: number;
+  payment_status: string;
+  name: string;
+  email: string;
+  phone: string;
+  item_type: string;
+  item_title: string | null;
+}
 
 async function db() {
   return await mysql.createConnection({
@@ -21,7 +33,8 @@ export async function POST(req: Request) {
 
     // This query joins all necessary tables to get the order,
     // the user, and the specific item title/type.
-    const [rows]: any = await conn.execute(
+    // FIX: Use generic <OrderRow[]> instead of : any
+    const [rows] = await conn.execute<OrderRow[]>(
       `
       SELECT
         o.id, 

@@ -10,18 +10,29 @@ import Loader from "@/components/loader";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator";
-import Link from "next/link";
 import BankTransferModal from "@/components/bank_details_modal";
-import { IconCreditCard } from "@tabler/icons-react";
+
+// 1. Define Interfaces
+interface ResourceData {
+  title: string;
+  price: number;
+}
+
+interface UserData {
+  name: string;
+  email: string;
+  phone: string;
+  institution?: string;
+}
 
 export default function CheckoutPage() {
   const { token } = useParams();
   const { data: session, status } = useSession();
 
   const [itemId, setItemId] = useState<number | null>(null);
-  const [course, setCourse] = useState<any>(null);
-  const [userInfo, setUserInfo] = useState<any>(null);
+  // 2. Fix State Types
+  const [course, setCourse] = useState<ResourceData | null>(null);
+  const [userInfo, setUserInfo] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [alreadyPurchased, setAlreadyPurchased] = useState(false);
@@ -123,7 +134,8 @@ export default function CheckoutPage() {
 
   // ✅ Submit order
   const handleSubmit = async () => {
-    if (!itemId || !userInfo) return;
+    // 3. Add !course check to satisfy TS
+    if (!itemId || !userInfo || !course) return;
 
     setPlacingOrder(true);
 
@@ -192,7 +204,8 @@ export default function CheckoutPage() {
   }
 
 
-  if (loading || alreadyPurchased) {
+  // 4. Ensure course and userInfo exist before rendering
+  if (loading || alreadyPurchased || !course || !userInfo) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader isLoading={true} className=""/>

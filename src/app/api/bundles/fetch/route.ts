@@ -1,5 +1,33 @@
 import { NextResponse } from "next/server";
-import mysql from "mysql2/promise";
+import mysql, { RowDataPacket } from "mysql2/promise";
+
+// 1. Define Types
+interface BundleRow extends RowDataPacket {
+  id: number;
+  title: string;
+  description: string;
+  price: number;
+  discount_price: number;
+  created_at: Date;
+  // Add other bundle columns here if needed
+}
+
+interface RawItemRow extends RowDataPacket {
+  bundle_id: number;
+  course_id: number | null;
+  course_title: string | null;
+  course_thumbnail: string | null;
+  resource_id: number | null;
+  resource_title: string | null;
+  resource_thumbnail: string | null;
+}
+
+interface ProcessedItem {
+  id: number;
+  title: string;
+  thumbnail: string | null;
+  type: 'course' | 'resource';
+}
 
 async function db() {
   return await mysql.createConnection({
@@ -11,11 +39,12 @@ async function db() {
 }
 
 // GET handler for fetching all bundles
-export async function GET(req: Request) {
+// Removed unused 'req' argument
+export async function GET() {
   const conn = await db();
   try {
-    // 1. Fetch all bundles
-    const [bundles]: any = await conn.execute(
+    // 2. Fetch all bundles
+    const [bundles] = await conn.execute<BundleRow[]>(
       `SELECT * FROM bundles ORDER BY created_at DESC`
     );
 
@@ -23,8 +52,8 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: true, bundles: [] });
     }
 
-    // 2. Fetch all items (courses and resources) for all bundles
-    const [items]: any = await conn.execute(`
+    // 3. Fetch all items (courses and resources) for all bundles
+    const [items] = await conn.execute<RawItemRow[]>(`
       SELECT 
         bi.bundle_id, 
         c.id as course_id, 
@@ -38,33 +67,36 @@ export async function GET(req: Request) {
       LEFT JOIN resources r ON bi.resource_id = r.id
     `);
 
-    // 3. Group items by bundle_id into a Map for efficient lookup
-    const itemsMap = new Map<number, any[]>();
+    // 4. Group items by bundle_id into a Map
+    const itemsMap = new Map<number, ProcessedItem[]>();
+    
     for (const item of items) {
       if (!itemsMap.has(item.bundle_id)) {
         itemsMap.set(item.bundle_id, []);
       }
-      const bundleItems = itemsMap.get(item.bundle_id);
+      // '!' assertion is safe here because we just set it above
+      const bundleItems = itemsMap.get(item.bundle_id)!;
       
       if (item.course_id) {
         bundleItems.push({
           id: item.course_id,
-          title: item.course_title,
+          title: item.course_title!, // we know it exists if ID exists
           thumbnail: item.course_thumbnail,
           type: 'course'
         });
       } else if (item.resource_id) {
         bundleItems.push({
           id: item.resource_id,
-          title: item.resource_title,
+          title: item.resource_title!,
           thumbnail: item.resource_thumbnail,
           type: 'resource'
         });
       }
     }
 
-    // 4. Combine bundles with their respective items
-    const result = bundles.map((bundle: any) => ({
+    // 5. Combine bundles with their respective items
+    // 'bundle' is automatically typed as BundleRow
+    const result = bundles.map((bundle) => ({
       ...bundle,
       items: itemsMap.get(bundle.id) || []
     }));

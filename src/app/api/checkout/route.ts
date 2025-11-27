@@ -1,5 +1,18 @@
 import { NextResponse } from "next/server";
-import mysql from "mysql2/promise";
+import mysql, { RowDataPacket, ResultSetHeader } from "mysql2/promise";
+
+// 1. Define Database Row Types
+interface UserRow extends RowDataPacket {
+  id: number;
+}
+
+interface PriceRow extends RowDataPacket {
+  price: number;
+}
+
+interface BundlePriceRow extends RowDataPacket {
+  discount_price: number;
+}
 
 async function db() {
   return await mysql.createConnection({
@@ -26,7 +39,8 @@ export async function POST(req: Request) {
     }
 
     // ✅ Check if user exists or create new
-    const [userRows]: any = await conn.execute(
+    // FIX: Use <UserRow[]> generic
+    const [userRows] = await conn.execute<UserRow[]>(
       "SELECT id FROM users WHERE email = ? LIMIT 1",
       [email]
     );
@@ -36,7 +50,8 @@ export async function POST(req: Request) {
     if (userRows.length > 0) {
       userId = userRows[0].id;
     } else {
-      const [newUser]: any = await conn.execute(
+      // FIX: Use <ResultSetHeader> for INSERTs
+      const [newUser] = await conn.execute<ResultSetHeader>(
         "INSERT INTO users (name, email, phone) VALUES (?, ?, ?)",
         [name, email, phone]
       );
@@ -47,7 +62,8 @@ export async function POST(req: Request) {
     let price = 0;
 
     if (type === "course") {
-      const [rows]: any = await conn.execute(
+      // FIX: Use <PriceRow[]> generic
+      const [rows] = await conn.execute<PriceRow[]>(
         "SELECT price FROM courses WHERE id = ? LIMIT 1",
         [id]
       );
@@ -56,7 +72,8 @@ export async function POST(req: Request) {
     } 
     
     if (type === "resource") {
-      const [rows]: any = await conn.execute(
+      // FIX: Use <PriceRow[]> generic
+      const [rows] = await conn.execute<PriceRow[]>(
         "SELECT price FROM resources WHERE id = ? LIMIT 1",
         [id]
       );
@@ -65,7 +82,8 @@ export async function POST(req: Request) {
     } 
     
     if (type === "bundle") {
-      const [rows]: any = await conn.execute(
+      // FIX: Use <BundlePriceRow[]> generic
+      const [rows] = await conn.execute<BundlePriceRow[]>(
         "SELECT discount_price FROM bundles WHERE id = ? LIMIT 1",
         [id]
       );
@@ -74,7 +92,8 @@ export async function POST(req: Request) {
     }
 
     // ✅ Create order
-    const [orderResult]: any = await conn.execute(
+    // FIX: Use <ResultSetHeader> generic
+    const [orderResult] = await conn.execute<ResultSetHeader>(
       `INSERT INTO orders (user_id, total_amount, discount_amount, final_amount, payment_method, payment_status)
        VALUES (?, ?, 0, ?, ?, 'pending')`,
       [userId, price, price, paymentMethod]

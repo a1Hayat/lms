@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 
 // Helper: Convert Node stream to Web stream
-function iteratorToStream(iterator: any) {
+// Fix: Type the iterator explicitly as AsyncIterator<Uint8Array> (Buffer extends Uint8Array)
+function iteratorToStream(iterator: AsyncIterator<Uint8Array>) {
   return new ReadableStream({
     async pull(controller) {
       const { value, done } = await iterator.next();
@@ -14,12 +15,18 @@ function iteratorToStream(iterator: any) {
   });
 }
 
+// Define specific payload type
+interface FileTokenPayload extends JwtPayload {
+  filePath: string;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const token = req.nextUrl.searchParams.get("token");
     if (!token) return new NextResponse("Missing token", { status: 400 });
 
-    const payload: any = jwt.verify(token, process.env.JWT_SECRET!);
+    // Fix: Cast to specific interface instead of 'any'
+    const payload = jwt.verify(token, process.env.JWT_SECRET!) as FileTokenPayload;
     const filePath = path.join(process.cwd(), payload.filePath);
 
     if (!fs.existsSync(filePath)) return new NextResponse("File not found", { status: 404 });

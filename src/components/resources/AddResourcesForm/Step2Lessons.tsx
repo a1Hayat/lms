@@ -3,10 +3,12 @@
 import React from "react"
 import { useFormContext } from "react-hook-form"
 import { Input } from "@/components/ui/input"
-import { CourseFormValues } from "@/app/dashboard/admin/resources/add/page"
+// Fix: Import ResourceFormValues instead of CourseFormValues
+import { ResourceFormValues } from "@/app/dashboard/admin/resources/add/page"
 
 export default function Step2UploadPDF() {
-  const { setValue, watch } = useFormContext<CourseFormValues>()
+  // Fix: Use ResourceFormValues generic
+  const { setValue, watch } = useFormContext<ResourceFormValues>()
   const file = watch("file_path")
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -23,6 +25,7 @@ export default function Step2UploadPDF() {
       <h2 className="text-lg font-medium mb-3">Upload PDF</h2>
 
       <Input type="file" accept="application/pdf" onChange={onFileChange} />
+      {/* file can be null, so check before accessing .name */}
       {file && <p className="text-sm mt-1">Selected: {file.name}</p>}
     </div>
   )

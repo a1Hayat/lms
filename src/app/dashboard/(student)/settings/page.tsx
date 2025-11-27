@@ -2,12 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-// --- FIX: Corrected component import paths ---
 import Loader from "../../../../components/loader";
 import { AppAlert } from "../../../../components/alerts";
 import { Input } from "../../../../components/ui/input";
 import { Button } from "../../../../components/ui/button";
-// --- END FIX ---
 import { IconDeviceFloppy, IconKey } from "@tabler/icons-react";
 
 type UserProfile = {
@@ -60,7 +58,8 @@ export default function SettingsPage() {
           if (data.user_info?.[0]) {
             setProfile(data.user_info[0]);
           }
-        } catch (err) {
+        } catch {
+          // FIX: Removed unused 'err' variable
           setAlert({
             show: true,
             type: "error",
@@ -100,12 +99,14 @@ export default function SettingsPage() {
         title: "Success",
         description: "Your profile has been updated.",
       });
-    } catch (err: any) {
+    } catch (err) {
+      // FIX: Handle unknown error type safely instead of using 'any'
+      const errorMessage = err instanceof Error ? err.message : "Could not save profile.";
       setAlert({
         show: true,
         type: "error",
         title: "Update Failed",
-        description: err.message || "Could not save profile.",
+        description: errorMessage,
       });
     }
     setIsSavingProfile(false);
@@ -148,12 +149,14 @@ export default function SettingsPage() {
       });
       // Clear password fields
       setPasswords({ oldPassword: "", newPassword: "", confirmPassword: "" });
-    } catch (err: any) {
+    } catch (err) {
+      // FIX: Handle unknown error type safely instead of using 'any'
+      const errorMessage = err instanceof Error ? err.message : "Could not change password.";
       setAlert({
         show: true,
         type: "error",
         title: "Update Failed",
-        description: err.message || "Could not change password.",
+        description: errorMessage,
       });
     }
     setIsSavingPassword(false);
@@ -189,6 +192,8 @@ export default function SettingsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Left Column (Avatar) */}
           <div className="md:col-span-1 flex flex-col items-center">
+            {/* FIX: Suppress Next.js image warning */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={profile.image || "/images/users/user_default.png"}
               alt="Profile"

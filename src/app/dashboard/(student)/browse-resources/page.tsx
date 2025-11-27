@@ -9,13 +9,23 @@ import { CourseCardSkeletonRow } from "@/components/loadingSkeleton";
 import { useRouter } from "next/navigation";
 import { Button } from "@headlessui/react";
 
+// 1. Define Interface
+interface Resource {
+  id: number;
+  title: string;
+  thumbnail: string | null;
+  price: number;
+  isEnrolled?: boolean;
+}
+
 export default function BrowseResourcePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
   const [isBtnLoading, setIsBtnLoading] = useState(false);
-  const [resources, setResources] = useState<any[]>([]);
-  const [filtered, setFiltered] = useState<any[]>([]);
+  // 2. Fix State Types
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [filtered, setFiltered] = useState<Resource[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -28,7 +38,7 @@ export default function BrowseResourcePage() {
 
   // ✅ Fetch all resources and check enrolled/purchased status
   useEffect(() => {
-    if (status !== "authenticated") return;
+    if (status !== "authenticated" || !session?.user?.id) return;
 
     const loadData = async () => {
       setLoading(true);
@@ -38,7 +48,8 @@ export default function BrowseResourcePage() {
         const allData = await allRes.json();
 
         const resourcesWithStatus = await Promise.all(
-          allData.resources.map(async (res: any) => {
+          // 3. Fix map argument type
+          allData.resources.map(async (res: Resource) => {
             // Call your "check enrollment/purchase" API
             const checkRes = await fetch("/api/check-enrollments", {
               method: "POST",
@@ -84,7 +95,8 @@ export default function BrowseResourcePage() {
   }, [search, resources]);
 
   // ✅ View / enroll logic
-  const handleViewResource = async (resource: any) => {
+  // 4. Fix function argument type
+  const handleViewResource = async (resource: Resource) => {
 
     setIsBtnLoading(true);
     try {
@@ -133,6 +145,7 @@ export default function BrowseResourcePage() {
                 className="bg-white dark:bg-neutral-900 rounded-lg shadow hover:shadow-lg transition p-3 flex flex-col gap-2 min-h-[210px] cursor-pointer"
                 onClick={() => handleViewResource(res)}
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={res.thumbnail || "/placeholder.jpg"}
                   alt={res.title}
