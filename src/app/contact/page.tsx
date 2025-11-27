@@ -182,7 +182,7 @@ export default function ContactPage() {
           </Card>
 
           {/* Contact Info Card (No changes) */}
-          <div className="flex flex-col rounded-2xl bg-gradient-to-br from-blue-700 to-purple-800 p-8 text-white shadow-xl">
+          <div className="flex flex-col rounded-2xl bg-linear-to-br from-blue-700 to-purple-800 p-8 text-white shadow-xl">
             <h2 className="text-2xl font-semibold">Get in Touch</h2>
             <p className="mt-1 text-blue-100 text-sm">
               Reach out to us through any of the following channels:
@@ -197,12 +197,20 @@ export default function ContactPage() {
                   <p className="mt-0.5 text-blue-100 text-xs">
                     Speak directly with our support team.
                   </p>
+                  <div className="">
                   <a
-                    href="tel:+923001234567"
+                    href="tel:+923324040614"
+                    className="mt-1 mr-3 inline-block text-sm font-semibold text-white hover:text-blue-200 transition"
+                  >
+                    +92 332 4040614
+                  </a>
+                  <a
+                    href="tel:+923351400368"
                     className="mt-1 inline-block text-sm font-semibold text-white hover:text-blue-200 transition"
                   >
-                    +92 300 1234567
+                    +92 335 1400368
                   </a>
+                  </div>
                 </div>
               </div>
 
@@ -215,10 +223,10 @@ export default function ContactPage() {
                     Send us your queries and we’ll respond soon.
                   </p>
                   <a
-                    href="mailto:info@example.com"
+                    href="mailto:cswithbari.com"
                     className="mt-1 inline-block text-sm font-semibold text-white hover:text-blue-200 transition"
                   >
-                    info@example.com
+                    cswithbari@gmail.com
                   </a>
                 </div>
               </div>
@@ -229,9 +237,9 @@ export default function ContactPage() {
                 <div className="ml-3">
                   <h3 className="text-sm font-medium">Our Location</h3>
                   <p className="mt-0.5 text-blue-100 text-xs leading-relaxed">
-                    123 Code Street, Tech City,
-                    <br />
-                    Lahore, Pakistan
+                    Vision Academy Johar Town, <br/>
+                    Vision Academy Garden Town, <br/>
+                    Vision Academy DHA
                   </p>
                 </div>
               </div>

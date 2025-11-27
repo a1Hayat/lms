@@ -45,17 +45,17 @@ export function Footer() {
 
         {/* Socials */}
         <div className="flex gap-4 md:justify-self-end">
-          <Link href="#" className="text-muted-foreground hover:text-foreground">
+          <Link href="https://www.facebook.com/haseeb.gilani.1/" className="text-muted-foreground hover:text-foreground">
             <Facebook className="h-6 w-6" />
             <span className="sr-only">Facebook</span>
           </Link>
 
-          <Link href="#" className="text-muted-foreground hover:text-foreground">
+          <Link href="https://www.instagram.com/cswithbari/" className="text-muted-foreground hover:text-foreground">
             <Instagram className="h-6 w-6" />
             <span className="sr-only">Instagram</span>
           </Link>
 
-          <Link href="#" className="text-muted-foreground hover:text-foreground">
+          <Link href="https://www.youtube.com/@CSWITHBARI" className="text-muted-foreground hover:text-foreground">
             <Youtube className="h-6 w-6" />
             <span className="sr-only">YouTube</span>
           </Link>

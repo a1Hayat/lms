@@ -1,9 +1,14 @@
 // components/lms/feature-section.tsx
 import { Button } from "@/components/ui/button"
 import { Check } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
+import dashboard_dark from "@/components/images/dashboard_dark.png"
+import dashboard_ligth from "@/components/images/dashboard_ligth.png"
 
 export function FeatureSection() {
+
+
   return (
     <section id="about" className="container py-24 sm:py-32">
       <div className="grid items-center gap-12 md:grid-cols-2">
@@ -39,11 +44,22 @@ export function FeatureSection() {
           </Button>
         </div>
 
-        {/* Right Image */}
-        <div className="flex h-80 items-center justify-center rounded-lg bg-muted shadow-lg dark:bg-muted/50">
-          {/*  */}
-          <p className="text-muted-foreground">Dashboard Image Placeholder</p>
-        </div>
+          {/* Right Image */}
+          <div className="relative">
+            {/* Light mode image */}
+            <Image
+              src={dashboard_ligth}
+              alt="dashboard light mode"
+              className="rounded-lg dark:hidden border border-gray-200 hover:border-blue-300"
+            />
+
+            {/* Dark mode image */}
+            <Image
+              src={dashboard_dark}
+              alt="dashboard dark mode"
+              className="rounded-lg hidden dark:block border border-[#1f1f1f] hover:border-blue-900/30"
+            />
+          </div>
       </div>
     </section>
   )
