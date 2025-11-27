@@ -1,36 +1,73 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import jwt from "jsonwebtoken";
 
-export async function POST(req: Request) {
-  try {
-    const { token } = await req.json();
-    if (!token)
-      return NextResponse.json({ success: false, message: "Missing token" }, { status: 400 });
-
-    const payload: any = jwt.verify(token, process.env.JWT_SECRET!);
-    if (!payload.filePath)
-      return NextResponse.json({ success: false, message: "Invalid token payload" }, { status: 400 });
-
-    const filePath = path.join(process.cwd(), payload.filePath);
-    if (!fs.existsSync(filePath))
-      return NextResponse.json({ success: false, message: "File not found" }, { status: 404 });
-
-    const buffer = fs.readFileSync(filePath);
-
-    return new NextResponse(buffer, {
-      status: 200,
-      headers: {
-        "Content-Type": "application/pdf",
-        "Cache-Control": "no-store",
-        "Pragma": "no-cache",
-        "Expires": "0",
-      },
-    });
-  } catch (err) {
-    console.error("Error:", err);
-    return NextResponse.json({ success: false, message: "Unauthorized or expired" }, { status: 403 });
-  }
+// Helper: Convert Node stream to Web stream
+function iteratorToStream(iterator: any) {
+  return new ReadableStream({
+    async pull(controller) {
+      const { value, done } = await iterator.next();
+      if (done) controller.close();
+      else controller.enqueue(value);
+    },
+  });
 }
 
+export async function GET(req: NextRequest) {
+  try {
+    const token = req.nextUrl.searchParams.get("token");
+    if (!token) return new NextResponse("Missing token", { status: 400 });
+
+    const payload: any = jwt.verify(token, process.env.JWT_SECRET!);
+    const filePath = path.join(process.cwd(), payload.filePath);
+
+    if (!fs.existsSync(filePath)) return new NextResponse("File not found", { status: 404 });
+
+    const stats = fs.statSync(filePath);
+    const fileSize = stats.size;
+    
+    // --- CRITICAL: HANDLE RANGE REQUESTS ---
+    const range = req.headers.get("range");
+
+    if (range) {
+      // 1. Parse the Range (e.g., "bytes=0-1023")
+      const parts = range.replace(/bytes=/, "").split("-");
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      const chunksize = (end - start) + 1;
+
+      // 2. Create a stream for JUST that specific chunk
+      const fileStream = fs.createReadStream(filePath, { start, end });
+      const data = iteratorToStream(fileStream[Symbol.asyncIterator]());
+
+      // 3. Return 206 Partial Content
+      return new NextResponse(data, {
+        status: 206, // <--- IMPORTANT: Tells browser "Here is just a piece"
+        headers: {
+          "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+          "Accept-Ranges": "bytes",
+          "Content-Length": chunksize.toString(),
+          "Content-Type": "application/pdf",
+          "Cache-Control": "public, max-age=3600",
+        },
+      });
+    } 
+    
+    // Fallback: If browser doesn't ask for range (rare for PDF.js), send whole file
+    const fileStream = fs.createReadStream(filePath);
+    const data = iteratorToStream(fileStream[Symbol.asyncIterator]());
+    
+    return new NextResponse(data, {
+      status: 200,
+      headers: {
+        "Content-Length": fileSize.toString(),
+        "Content-Type": "application/pdf",
+      },
+    });
+
+  } catch (err) {
+    console.error("API Error:", err);
+    return new NextResponse("Internal Server Error", { status: 500 });
+  }
+}

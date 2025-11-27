@@ -3,13 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { getDocument, GlobalWorkerOptions, PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { PdfSkeletonView } from "./loadingSkeleton";
+import { Input } from "./ui/input";
 
-// Mobile-friendly JS worker
-GlobalWorkerOptions.workerSrc = "/pdf-worker/pdf.worker.min.js";
+// 1. Point to the .mjs file in your public folder
+GlobalWorkerOptions.workerSrc = "/pdf.worker.mjs";
 
-// Polyfill for PDF.js v5
+// Polyfill for PDF.js v5+
 if (typeof Promise.withResolvers === "undefined" && typeof window !== "undefined") {
   // @ts-expect-error
   window.Promise.withResolvers = function () {
@@ -30,135 +30,222 @@ export default function SecurePDFViewer({ fileUrl }: SecurePDFViewerProps) {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [numPages, setNumPages] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [progress, setProgress] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
+
+  const renderTaskRef = useRef<any>(null);
+  const pageProxyRef = useRef<PDFPageProxy | null>(null);
   const touchStartX = useRef(0);
 
-  // --- Load PDF ---
   useEffect(() => {
+    let loadingTask: any = null;
+    let isCancelled = false; 
+
     const loadPDF = async () => {
+      if (!fileUrl) return;
       setIsLoading(true);
+      setProgress(0);
       setError(null);
 
       try {
-        const pdf = await getDocument(fileUrl).promise;
+        loadingTask = getDocument({
+          url: fileUrl,
+          disableAutoFetch: true, 
+          disableStream: true,    
+          rangeChunkSize: 65536,
+        });
+        
+        loadingTask.onProgress = (p: { loaded: number; total: number }) => {
+          if (p.total > 0) {
+            setProgress(Math.round((p.loaded / p.total) * 100));
+          }
+        };
+
+        const pdf = await loadingTask.promise;
+        
+        // If the component unmounted (user left page), kill the process
+        if (isCancelled) {
+            pdf.destroy();
+            return;
+        }
+
         setPdfDoc(pdf);
         setNumPages(pdf.numPages);
         setCurrentPage(1);
-      } catch (err) {
+      } catch (err: any) {
+        // 2. CRITICAL FIX: Ignore "Worker was destroyed" errors
+        // These happen because React loads the component twice in dev mode.
+        if (err.message && err.message.includes("Worker was destroyed")) {
+            return;
+        }
+        if (err.name === "AbortException") {
+            return;
+        }
+
         console.error("PDF Load Error:", err);
-        setError("Failed to load PDF. Please try again.");
+        if (!isCancelled) {
+             setError(err.message || "Failed to load PDF.");
+        }
       } finally {
-        setIsLoading(false);
+        if (!isCancelled) setIsLoading(false);
       }
     };
 
-    if (fileUrl) loadPDF();
+    loadPDF();
+
+    return () => {
+      isCancelled = true;
+      if (loadingTask) {
+          loadingTask.destroy().catch(() => {});
+      }
+      if (pdfDoc) {
+          pdfDoc.destroy().catch(() => {});
+      }
+    };
   }, [fileUrl]);
 
-  // --- Render PDF page ---
   const renderPage = async (pageNum: number) => {
     if (!pdfDoc || !containerRef.current) return;
+    if (renderTaskRef.current) renderTaskRef.current.cancel();
+    if (pageProxyRef.current) {
+      pageProxyRef.current.cleanup();
+      pageProxyRef.current = null;
+    }
 
-    const page: PDFPageProxy = await pdfDoc.getPage(pageNum);
+    try {
+      const page = await pdfDoc.getPage(pageNum);
+      pageProxyRef.current = page;
 
-    const style = window.getComputedStyle(containerRef.current);
-    const paddingLeft = parseFloat(style.paddingLeft) || 0;
-    const paddingRight = parseFloat(style.paddingRight) || 0;
-    const usableWidth = containerRef.current.clientWidth - (paddingLeft + paddingRight);
+      const style = window.getComputedStyle(containerRef.current);
+      const usableWidth = containerRef.current.clientWidth - (parseFloat(style.paddingLeft) + parseFloat(style.paddingRight));
+      
+      const dpi = window.devicePixelRatio || 1;
+      const unscaledViewport = page.getViewport({ scale: 1 });
+      const scale = Math.min(1.5, usableWidth / unscaledViewport.width); 
+      const viewport = page.getViewport({ scale: scale * dpi });
 
-    const dpi = window.devicePixelRatio || 1;
-    const unscaledViewport = page.getViewport({ scale: 1 });
-    const scale = Math.min(1.5, usableWidth / unscaledViewport.width);
-    const viewport = page.getViewport({ scale: scale * dpi });
+      const canvas = document.createElement("canvas");
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      canvas.style.width = `${viewport.width / dpi}px`;
+      canvas.style.height = `${viewport.height / dpi}px`;
+      canvas.className = "rounded-md shadow-sm mx-auto block";
 
-    const canvas = document.createElement("canvas");
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    canvas.style.width = `${viewport.width / dpi}px`;
-    canvas.style.height = `${viewport.height / dpi}px`;
-    canvas.className = "rounded-md shadow-sm mx-auto block";
+      const context = canvas.getContext("2d", { alpha: false });
+      if (!context) return;
 
-    const context = canvas.getContext("2d");
-    if (!context) return;
-
-    containerRef.current.innerHTML = "";
-    containerRef.current.appendChild(canvas);
-
-    await page.render({ canvasContext: context, viewport, canvas }).promise;
+      containerRef.current.innerHTML = "";
+      containerRef.current.appendChild(canvas);
+      
+      const renderContext = { 
+        canvasContext: context, 
+        viewport,
+        canvas,
+      };
+      
+      // @ts-expect-error
+      const renderTask = page.render(renderContext);
+      renderTaskRef.current = renderTask;
+      await renderTask.promise;
+    } catch (error: any) {
+      if (error.name !== "RenderingCancelledException") console.error("Render error:", error);
+    }
   };
 
-  // --- Re-render on page change ---
   useEffect(() => {
     if (!pdfDoc) return;
-    requestAnimationFrame(() => renderPage(currentPage));
+    const rAF = requestAnimationFrame(() => renderPage(currentPage));
+    return () => cancelAnimationFrame(rAF);
   }, [currentPage, pdfDoc]);
 
-  // --- Disable right-click ---
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    const prevent = (e: MouseEvent) => e.preventDefault();
-    container.addEventListener("contextmenu", prevent);
-    return () => container.removeEventListener("contextmenu", prevent);
-  }, []);
-
-  // --- Swipe gestures ---
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
     const handleTouchStart = (e: TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
     const handleTouchEnd = (e: TouchEvent) => {
       const diff = e.changedTouches[0].clientX - touchStartX.current;
       if (diff > 50) setCurrentPage((p) => Math.max(1, p - 1));
       else if (diff < -50) setCurrentPage((p) => Math.min(numPages, p + 1));
     };
-
-    container.addEventListener("touchstart", handleTouchStart);
-    container.addEventListener("touchend", handleTouchEnd);
-    return () => {
-      container.removeEventListener("touchstart", handleTouchStart);
-      container.removeEventListener("touchend", handleTouchEnd);
-    };
+    container.addEventListener("touchstart", handleTouchStart, { passive: true });
+    container.addEventListener("touchend", handleTouchEnd, { passive: true });
+    return () => { container.removeEventListener("touchstart", handleTouchStart); container.removeEventListener("touchend", handleTouchEnd); };
   }, [numPages]);
 
   return (
-    <div className="flex flex-col items-center w-full space-y-4 text-gray-900 dark:text-gray-100">
-      {error && <div className="text-red-500 font-semibold">{error}</div>}
-      {isLoading && !error && <div className="w-full"><PdfSkeletonView /></div>}
+    <div className="flex flex-col items-center w-full space-y-4 text-gray-900 dark:text-gray-100 relative">
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center">
+          <p className="font-bold">Error loading document</p>
+          <span className="block text-sm">Reload or check your connection</span>
+        </div>
+      )}
+      
+      {isLoading && !error && (
+        <div className="w-full relative flex flex-col items-center justify-center min-h-[50vh]">
+            <PdfSkeletonView />
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white/90 dark:bg-[#0f0f0f] p-6 rounded-xl shadow-2xl z-20 w-[80%] max-w-[280px]">
+                <div className="flex justify-between text-xs font-semibold mb-2">
+                    <span>Loading...</span><span>{progress}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div className="bg-blue-600 h-full rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
+                </div>
+            </div>
+        </div>
+      )}
 
+      {/* CONTROLS */}
       {!isLoading && !error && numPages > 0 && (
-        <div className="flex items-center gap-3 bg-secondary/20 p-2 rounded-lg">
-          <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>
-            Previous
+        <div className="flex items-center gap-2 bg-white/50 dark:bg-[#1f1f1f] p-2 rounded-full border shadow-sm backdrop-blur-md sticky top-4 z-30 transition-all">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 rounded-full"
+            disabled={currentPage === 1} 
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          >
+            ←
           </Button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Input
               type="number"
               min={1}
               max={numPages}
               value={currentPage}
               onChange={(e) => {
-                const val = Number(e.target.value);
-                if (val >= 1 && val <= numPages) setCurrentPage(val);
+                // Parse integer
+                const val = parseInt(e.target.value);
+                // Only update if it is a valid number inside the range
+                // This allows typing "12" without crashing on "1"
+                if (!isNaN(val) && val >= 1 && val <= numPages) {
+                  setCurrentPage(val);
+                }
               }}
-              className="w-16 h-8 text-center"
+              // Tailwind classes explanation:
+              // w-12: fixed width for the number
+              // text-center: center the number
+              // border-none & focus-visible:ring-0: removes the box look
+              // [appearance:textfield]... : Hides the ugly browser up/down arrows
+              className="w-12 h-8 p-0 text-center border-none bg-transparent focus-visible:ring-0 text-sm font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
-            <span className="text-sm text-muted-foreground">/ {numPages}</span>
+            <span className="text-sm font-medium text-muted-foreground mr-2">/ {numPages}</span>
           </div>
 
-          <Button variant="outline" size="sm" disabled={currentPage === numPages} onClick={() => setCurrentPage((p) => Math.min(numPages, p + 1))}>
-            Next
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 rounded-full"
+            disabled={currentPage === numPages} 
+            onClick={() => setCurrentPage((p) => Math.min(numPages, p + 1))}
+          >
+            →
           </Button>
         </div>
       )}
 
-      <div
-        ref={containerRef}
-        className="w-full max-w-full min-h-[70vh] sm:min-h-[80vh] md:min-h-[90vh] rounded-xl bg-transparent p-2 sm:p-4 lg:p-6 flex justify-center items-start overflow-auto"
-      />
+      <div ref={containerRef} className="w-full min-h-[60vh] rounded-xl flex justify-center items-start overflow-hidden touch-pan-y" />
     </div>
   );
 }
-

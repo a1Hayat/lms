@@ -69,6 +69,22 @@ const data = {
         },
       ],
     },
+        {
+      title: "Manage Resources",
+      url: "#",
+      icon: IconBrandParsinta,
+      items: [
+        {
+          title: "Resources",
+          url: "/dashboard/admin/resources",
+        },
+         { title: "Enrollments", url: "#" },
+        {
+          title: "Add New",
+          url: "/dashboard/admin/resources/add",
+        },
+      ],
+    },
     {
       title: "Manage Bundles",
       url: "#",
