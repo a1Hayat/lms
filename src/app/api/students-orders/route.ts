@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import mysql, { RowDataPacket } from "mysql2/promise";
+import { db } from "@/lib/db"; // import your pool
+import { RowDataPacket } from "mysql2/promise";
 
 // Define the shape of the database row
 interface StudentOrderRow extends RowDataPacket {
@@ -11,18 +12,7 @@ interface StudentOrderRow extends RowDataPacket {
   item_title: string | null;
 }
 
-async function db() {
-  return await mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
-  });
-}
-
 export async function POST(req: Request) {
-  const conn = await db();
-
   try {
     const { user_id } = await req.json(); // Student's ID
 
@@ -33,9 +23,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Fetch all orders for this user (regardless of payment status)
-    // FIX: Use generic <StudentOrderRow[]> instead of : any
-    const [rows] = await conn.execute<StudentOrderRow[]>(
+    // Fetch all orders for this user
+    const [rows] = await db.execute<StudentOrderRow[]>(
       `
       SELECT
         o.id AS order_id,
@@ -43,7 +32,6 @@ export async function POST(req: Request) {
         o.created_at,
         o.payment_status,
 
-        -- Determine item type
         CASE
           WHEN oi.bundle_id IS NOT NULL THEN 'Bundle'
           WHEN oi.course_id IS NOT NULL THEN 'Course'
@@ -51,7 +39,6 @@ export async function POST(req: Request) {
           ELSE 'Unknown'
         END AS item_type,
 
-        -- Get the item title
         COALESCE(b.title, c.title, r.title) AS item_title
 
       FROM orders o
@@ -63,11 +50,10 @@ export async function POST(req: Request) {
       WHERE o.user_id = ?
 
       ORDER BY o.created_at DESC
-    `,
+      `,
       [user_id]
     );
 
-    // 'row' is now automatically typed as StudentOrderRow
     const orders = rows.map((row) => ({
       id: row.order_id,
       final_amount: row.final_amount,
@@ -84,7 +70,5 @@ export async function POST(req: Request) {
       { success: false, message: "Server error" },
       { status: 500 }
     );
-  } finally {
-    conn.end();
   }
 }

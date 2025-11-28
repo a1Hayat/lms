@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import mysql, { RowDataPacket } from "mysql2/promise";
+import { db } from "@/lib/db"; // using pool
+import { RowDataPacket } from "mysql2/promise";
 
 // Define the shape of the order row returned by the query
 interface OrderRow extends RowDataPacket {
@@ -13,28 +14,19 @@ interface OrderRow extends RowDataPacket {
   item_title: string | null;
 }
 
-async function db() {
-  return await mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
-  });
-}
-
 export async function POST(req: Request) {
-  const conn = await db();
   try {
     const { order_id } = await req.json();
 
     if (!order_id) {
-      return NextResponse.json({ success: false, message: "Order ID is required" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, message: "Order ID is required" },
+        { status: 400 }
+      );
     }
 
-    // This query joins all necessary tables to get the order,
-    // the user, and the specific item title/type.
-    // FIX: Use generic <OrderRow[]> instead of : any
-    const [rows] = await conn.execute<OrderRow[]>(
+    // Using pool directly
+    const [rows] = await db.execute<OrderRow[]>(
       `
       SELECT
         o.id, 
@@ -43,18 +35,13 @@ export async function POST(req: Request) {
         u.name, 
         u.email, 
         u.phone,
-        
-        -- Determine item type
         CASE
           WHEN oi.bundle_id IS NOT NULL THEN 'Bundle'
           WHEN oi.course_id IS NOT NULL THEN 'Course'
           WHEN oi.resource_id IS NOT NULL THEN 'Resource'
           ELSE 'Unknown'
         END AS item_type,
-        
-        -- Get the title from whichever table has it
         COALESCE(b.title, c.title, r.title) AS item_title
-
       FROM orders o
       JOIN users u ON o.user_id = u.id
       JOIN order_items oi ON o.id = oi.order_id
@@ -73,7 +60,6 @@ export async function POST(req: Request) {
 
     const row = rows[0];
 
-    // Format the response to match what the frontend expects
     const orderDetails = {
       id: row.id,
       final_amount: row.final_amount,
@@ -86,15 +72,12 @@ export async function POST(req: Request) {
       item: {
         type: row.item_type,
         title: row.item_title,
-      }
+      },
     };
 
     return NextResponse.json({ success: true, order: orderDetails });
-
   } catch (error) {
     console.error("Fetch order error:", error);
     return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });
-  } finally {
-    conn.end();
   }
 }

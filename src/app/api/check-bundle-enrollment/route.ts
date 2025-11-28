@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import mysql, { RowDataPacket } from "mysql2/promise";
+import { db } from "@/lib/db"; // ← use your shared pool
+import { RowDataPacket } from "mysql2/promise";
 
 // 1. Define Types
 interface ItemRow extends RowDataPacket {
@@ -7,51 +8,49 @@ interface ItemRow extends RowDataPacket {
   resource_id: number | null;
 }
 
-// Database connection function
-async function db() {
-  return await mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
-  });
-}
-
 export async function POST(req: Request) {
-  const conn = await db();
   try {
     const { user_id, bundle_id } = await req.json();
 
     if (!user_id || !bundle_id) {
-      return NextResponse.json({ success: false, message: "Missing required data" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, message: "Missing required data" },
+        { status: 400 }
+      );
     }
 
-    // 2. Get all item IDs in the bundle
-    // FIX: Use generic <ItemRow[]> instead of : any
-    const [bundleItems] = await conn.execute<ItemRow[]>(
-      `SELECT course_id, resource_id FROM bundle_items WHERE bundle_id = ?`,
+    // 2. Get all item IDs inside the bundle
+    const [bundleItems] = await db.execute<ItemRow[]>(
+      `SELECT course_id, resource_id 
+       FROM bundle_items 
+       WHERE bundle_id = ?`,
       [bundle_id]
     );
 
+    // If bundle contains no items → treat as already purchased
     if (bundleItems.length === 0) {
-      // If bundle is empty, consider it "purchased" by default
       return NextResponse.json({ purchased: true });
     }
 
-    // 3. Get all enrollment IDs for the user
-    // FIX: Use generic <ItemRow[]> instead of : any
-    const [userEnrollments] = await conn.execute<ItemRow[]>(
-      `SELECT course_id, resource_id FROM enrollments WHERE user_id = ?`,
+    // 3. Get all enrollment items for the user
+    const [userEnrollments] = await db.execute<ItemRow[]>(
+      `SELECT course_id, resource_id 
+       FROM enrollments 
+       WHERE user_id = ?`,
       [user_id]
     );
 
-    // 4. Create Sets for fast lookup
-    // Typescript now infers 'e' correctly as ItemRow
-    const userCourseIds = new Set(userEnrollments.map((e) => e.course_id).filter(Boolean));
-    const userResourceIds = new Set(userEnrollments.map((e) => e.resource_id).filter(Boolean));
+    // 4. Convert to sets for fast lookup
+    const userCourseIds = new Set(
+      userEnrollments.map((e) => e.course_id).filter(Boolean)
+    );
+    const userResourceIds = new Set(
+      userEnrollments.map((e) => e.resource_id).filter(Boolean)
+    );
 
-    // 5. Check if user is enrolled in ALL bundle items
+    // 5. Confirm user has **ALL** items in the bundle
     let isFullyEnrolled = true;
+
     for (const item of bundleItems) {
       if (item.course_id && !userCourseIds.has(item.course_id)) {
         isFullyEnrolled = false;
@@ -67,8 +66,9 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error("Failed to check bundle enrollment:", error);
-    return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });
-  } finally {
-    conn.end();
+    return NextResponse.json(
+      { success: false, message: "Server error" },
+      { status: 500 }
+    );
   }
 }

@@ -1,15 +1,10 @@
 import { NextResponse } from "next/server";
 import mysql, { ResultSetHeader } from "mysql2/promise"; // Import the specific type for INSERT results
+import { db } from "@/lib/db";
 
 export async function POST(req: Request) {
   const { name, originalPrice, description, discountedPrice, courses, resources } = await req.json();
 
-  const db = await mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
-  });
 
   try {
     // FIX: Use generic <ResultSetHeader> instead of : any

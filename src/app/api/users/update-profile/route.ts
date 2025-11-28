@@ -1,19 +1,9 @@
 import { NextResponse } from "next/server";
-import mysql from "mysql2/promise";
+import { db } from "@/lib/db"; // import your pool
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 
-async function db() {
-  return await mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
-  });
-}
-
 export async function POST(req: Request) {
-  const conn = await db();
   try {
     const session = await getServerSession(authOptions);
     const { user_id, name, phone, institution } = await req.json();
@@ -24,7 +14,7 @@ export async function POST(req: Request) {
     }
 
     // Update the user's details
-    await conn.execute(
+    await db.execute(
       `UPDATE users 
        SET name = ?, phone = ?, institution = ?
        WHERE id = ?`,
@@ -32,11 +22,8 @@ export async function POST(req: Request) {
     );
 
     return NextResponse.json({ success: true, message: "Profile updated" });
-
   } catch (error) {
     console.error("Update profile error:", error);
     return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });
-  } finally {
-    conn.end();
   }
 }

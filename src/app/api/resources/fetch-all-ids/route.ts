@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
-import mysql from "mysql2/promise";
+import { db } from "@/lib/db"; // import the pool
 
 export async function GET() {
-  const db = await mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
-  });
-
-  const [rows] = await db.execute("SELECT id, title, price FROM resources");
-  return NextResponse.json(rows);
+  try {
+    const [rows] = await db.execute(
+      "SELECT id, title, price FROM resources"
+    );
+    return NextResponse.json(rows);
+  } catch (error) {
+    console.error("Fetch resources error:", error);
+    return NextResponse.json(
+      { success: false, message: "Server error" },
+      { status: 500 }
+    );
+  }
 }
