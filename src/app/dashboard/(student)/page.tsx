@@ -11,14 +11,43 @@ import { resources } from "../../../../types/resources";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { AppAlert } from "@/components/alerts";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Loader2, Calendar, MapPin, Video, UserCheck, RefreshCw } from "lucide-react";
+import { format } from "date-fns";
 
 // 1. Define Interfaces
 interface DashboardItem {
   id: number;
   title: string;
-  // Fix: Allow thumbnail to be null or undefined to match resource/course types
   thumbnail: string | null | undefined;
   price: number;
+}
+
+interface Workshop {
+  id: number;
+  session_name: string;
+  type: 'online' | 'physical';
+  workshop_date: string;
+  location: string;
+  status: 'opened' | 'closed';
+  is_registered: number | boolean;
 }
 
 // --------------------------------------------
@@ -32,7 +61,6 @@ function ItemList({
   viewMoreLink,
 }: {
   title: string;
-  // 2. Fix 'any' type
   items: DashboardItem[];
   loading: boolean;
   onClick: (item: DashboardItem) => void;
@@ -56,7 +84,6 @@ function ItemList({
                 className="bg-white dark:bg-neutral-900 rounded-lg shadow hover:shadow-lg transition p-3 flex flex-col gap-2 min-h-[210px] cursor-pointer"
                 onClick={() => onClick(item)}
               >
-                {/* 3. Suppress img warning */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={item.thumbnail || "/placeholder.jpg"}
@@ -77,7 +104,6 @@ function ItemList({
             ))}
           </div>
 
-          {/* Show "View More" only when >3 items */}
           {items.length > MAX_ITEMS && (
             <a
               href={viewMoreLink}
@@ -94,6 +120,186 @@ function ItemList({
   );
 }
 
+// --------------------------------------------
+// Workshop Widget Component (New Table)
+// --------------------------------------------
+function WorkshopsWidget({
+  workshops,
+  loading,
+  onRegister,
+}: {
+  workshops: Workshop[];
+  loading: boolean;
+  onRegister: (workshopId: number) => Promise<void>;
+}) {
+  return (
+    <div className="bg-white dark:bg-neutral-900 rounded-lg p-5 shadow-md flex flex-col h-auto">
+      <div className="flex justify-between items-center mb-5">
+        <p className="font-bold">Workshops / Sessions</p>
+      </div>
+
+      {loading ? (
+         <div className="flex h-40 items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+         </div>
+      ) : workshops.length > 0 ? (
+        <div className="overflow-auto -mx-2 px-2">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[140px]">Workshop</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {workshops.map((workshop) => {
+                const isApplied = Boolean(workshop.is_registered);
+                return (
+                  <TableRow
+                    key={workshop.id}
+                    className={`
+                      ${isApplied 
+                        ? 'bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/30' 
+                        : ''}
+                    `}
+                  >
+                    <TableCell className="font-medium align-top py-3">
+                      <div className="flex flex-col gap-1">
+                        <span className="line-clamp-2 text-xs font-semibold">{workshop.session_name}</span>
+                        {isApplied && (
+                           <div className="flex items-center text-[10px] text-green-600 font-bold">
+                             <UserCheck className="mr-1 h-3 w-3" /> Registered
+                           </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="align-top py-3">
+                      {workshop.status === 'opened' ? (
+                        <Badge variant="outline" className="border-green-500 text-green-600 text-[10px] h-5 px-1.5">
+                          Open
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive" className="text-[10px] h-5 px-1.5">Closed</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right align-top py-3">
+                      <WorkshopActionDialog 
+                        workshop={workshop} 
+                        isApplied={isApplied} 
+                        onRegister={onRegister} 
+                      />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-full text-gray-500 gap-2 min-h-[200px]">
+           <Calendar className="h-8 w-8 opacity-20" />
+           <p className="text-sm">No workshops available.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WorkshopActionDialog({ 
+  workshop, 
+  isApplied, 
+  onRegister 
+}: { 
+  workshop: Workshop; 
+  isApplied: boolean; 
+  onRegister: (id: number) => Promise<void>; 
+}) {
+  const [open, setOpen] = useState(false);
+  const [registering, setRegistering] = useState(false);
+
+  const handleRegisterClick = async () => {
+    setRegistering(true);
+    await onRegister(workshop.id);
+    // Note: Parent handles reload, but we stop spinner if component unmounts/reloads happens fast
+    // setRegistering(false); // Component might unmount on reload
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button 
+          variant={isApplied ? "ghost" : "secondary"} 
+          size="sm" 
+          className={`h-7 text-xs px-2 ${isApplied ? 'text-green-700 hover:text-green-800 hover:bg-green-100' : ''}`}
+        >
+          {isApplied ? 'View' : 'Register'}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>{workshop.session_name}</DialogTitle>
+          <DialogDescription>
+            Workshop Details
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Calendar className="h-3 w-3" /> Date
+                    </span>
+                    <span className="text-sm font-medium">
+                        {/* Safe date parsing */}
+                        {(() => {
+                            try {
+                                return format(new Date(workshop.workshop_date), 'MMM d, p');
+                            } catch {
+                                return workshop.workshop_date;
+                            }
+                        })()}
+                    </span>
+                </div>
+                
+                <div className="flex flex-col gap-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        {workshop.type === 'online' ? <Video className="h-3 w-3"/> : <MapPin className="h-3 w-3"/>}
+                        Location
+                    </span>
+                    <span className="text-sm font-medium">{workshop.location}</span>
+                </div>
+            </div>
+
+            {isApplied ? (
+                <div className="bg-green-100 p-3 rounded-md text-green-800 text-center text-sm font-medium border border-green-200 flex items-center justify-center gap-2">
+                    <UserCheck className="h-4 w-4" /> You are registered.
+                </div>
+            ) : (
+                <div className="text-sm text-gray-500">
+                    Click register below to book your seat.
+                </div>
+            )}
+        </div>
+
+        <DialogFooter>
+          {!isApplied && workshop.status === 'opened' && (
+             <Button onClick={handleRegisterClick} disabled={registering} className="w-full">
+               {registering && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+               Confirm Registration
+             </Button>
+          )}
+           {isApplied && (
+             <Button variant="outline" disabled className="w-full text-green-700 border-green-200 bg-green-50">
+               Registered
+             </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 // --------------------------------------------
 // Main Component
@@ -104,10 +310,11 @@ export default function StudentDashboard() {
 
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [isLoadingResources, setIsLoadingResources] = useState(false);
+  const [isLoadingWorkshops, setIsLoadingWorkshops] = useState(false);
 
-  // 4. Fix State Types
   const [courses, setCourses] = useState<DashboardItem[]>([]);
-  const [resourcesList, setResourcesList] = useState<resources[]>([]); // resources imported type likely matches
+  const [resourcesList, setResourcesList] = useState<resources[]>([]);
+  const [workshops, setWorkshops] = useState<Workshop[]>([]);
 
   const loading = isLoadingCourses || isLoadingResources;
 
@@ -121,7 +328,6 @@ export default function StudentDashboard() {
   // --------------------------------------------
   // Fetch Courses
   // --------------------------------------------
-  // 5. Use useCallback to fix dependency warnings
   const fetchCourses = useCallback(async () => {
     try {
       setIsLoadingCourses(true);
@@ -182,6 +388,31 @@ export default function StudentDashboard() {
   }, [session?.user?.id]);
 
   // --------------------------------------------
+  // Fetch Workshops
+  // --------------------------------------------
+  const fetchWorkshops = useCallback(async () => {
+    try {
+      setIsLoadingWorkshops(true);
+      if (!session?.user?.id) return [];
+
+      const res = await fetch(`/api/workshops/registrations?userId=${session.user.id}`, {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch (e) {
+       console.error(e);
+       return [];
+    } finally {
+      setIsLoadingWorkshops(false);
+    }
+  }, [session?.user?.id]);
+
+
+  // --------------------------------------------
   // Load Dashboard Data
   // --------------------------------------------
   useEffect(() => {
@@ -190,14 +421,16 @@ export default function StudentDashboard() {
     const loadData = async () => {
       if (!session?.user?.id) return;
 
-      const [courseData, resourceData] = await Promise.all([
+      const [courseData, resourceData, workshopData] = await Promise.all([
         fetchCourses(),
         fetchResources(),
+        fetchWorkshops(),
       ]);
 
       if (mounted) {
         setCourses(courseData);
         setResourcesList(resourceData);
+        setWorkshops(workshopData);
       }
     };
 
@@ -205,14 +438,12 @@ export default function StudentDashboard() {
     return () => {
       mounted = false;
     };
-  }, [session?.user?.id, fetchCourses, fetchResources]); // Added dependencies
+  }, [session?.user?.id, fetchCourses, fetchResources, fetchWorkshops]);
 
   // --------------------------------------------
   // Handlers
   // --------------------------------------------
-  // 6. Fix 'any' type and use router.push
   const handleViewCourse = async (course_id: number) => {
-    // token auth
       try {
         const res = await fetch("/api/courses/token", {
           method: "POST",
@@ -238,13 +469,38 @@ export default function StudentDashboard() {
       } catch {}
   };
 
+  const handleRegisterWorkshop = async (workshopId: number) => {
+    if(!session?.user?.id) return;
+
+    try {
+      const res = await fetch('/api/workshops/registrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workshopId, userId: session.user.id }),
+      });
+
+      if (res.ok) {
+        // Reload page to reflect changes as requested
+        window.location.reload();
+      } else {
+         setAlert({
+            show: true,
+            type: 'error',
+            title: 'Registration Failed',
+            description: 'Could not register for this workshop.'
+         });
+      }
+    } catch (error) {
+       console.error(error);
+    }
+  };
+
 
   // --------------------------------------------
   // Render
   // --------------------------------------------
   return (
     <ProtectedRoute allowedRoles={["student"]}>
-      {/* 7. Use the Alert component to display errors */}
       <AppAlert 
         {...alert} 
         open={alert.show} 
@@ -312,33 +568,25 @@ export default function StudentDashboard() {
             <ItemList
               title="My Courses"
               items={courses}
-              loading={loading}
-              // 8. Fix incorrect map usage in onClick
+              loading={isLoadingCourses}
               onClick={(item) => handleViewCourse(item.id)}
               viewMoreLink="/dashboard/my-courses" 
             />
 
             <ItemList
               title="My Resources"
-              // Fix: Cast resourcesList to match the interface, relying on the optional thumbnail
               items={resourcesList as unknown as DashboardItem[]}
-              loading={loading}
-              // 8. Fix incorrect map usage in onClick
+              loading={isLoadingResources}
               onClick={(item) => handleViewResource(item.id)}
               viewMoreLink="/dashboard/my-resources"  
             />
 
-
-            <div className="bg-white dark:bg-neutral-900 rounded-lg p-5 shadow-md">
-              <p className="font-bold mb-5">Up coming sessions/workshops</p>
-              {/* <StudentWorkshopsPage/> */}
-             <Badge
-                variant="outline"
-                className=" text-blue-600 flex justify-self-center border-blue-500/50 dark:text-blue-400"
-              >
-                Coming Soon
-              </Badge>
-            </div>
+            {/* WORKSHOPS TABLE WIDGET */}
+            <WorkshopsWidget 
+              workshops={workshops}
+              loading={isLoadingWorkshops}
+              onRegister={handleRegisterWorkshop}
+            />
 
           </div>
         </div>

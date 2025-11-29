@@ -71,7 +71,7 @@ export const createColumns = (
   },
   {
     accessorKey: "location",
-    header: "Location",
+    header: "Details",
     cell: ({ row }) => (
       <span
         className="text-slate-500 dark:text-slate-400 truncate max-w-[200px] block"
