@@ -43,7 +43,7 @@ interface DashboardItem {
 interface Workshop {
   id: number;
   session_name: string;
-  type: 'online' | 'physical';
+  type: 'online' | 'physical' | 'hybrid';
   workshop_date: string;
   location: string;
   status: 'opened' | 'closed';
@@ -472,6 +472,9 @@ export default function StudentDashboard() {
   const handleRegisterWorkshop = async (workshopId: number) => {
     if(!session?.user?.id) return;
 
+    // Find the workshop being registered for
+    const targetWorkshop = workshops.find(w => w.id === workshopId);
+
     try {
       const res = await fetch('/api/workshops/registrations', {
         method: 'POST',
@@ -479,8 +482,32 @@ export default function StudentDashboard() {
         body: JSON.stringify({ workshopId, userId: session.user.id }),
       });
 
-      if (res.ok) {
-        // Reload page to reflect changes as requested
+      if (res.ok) { 
+        // Send email if workshop details found
+        if (targetWorkshop) {
+            try {
+                await fetch("/api/send-mail", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        to: session?.user.email,
+                        subject: "Workshop Registration Confirmed - CSWithBari",
+                        type: "workshopRegistrationEmail", // Matches the template key
+                        payload: {
+                            name: session?.user.name,
+                            workshopName: targetWorkshop.session_name,
+                            date: format(new Date(targetWorkshop.workshop_date), 'PPP p'),
+                            type: targetWorkshop.type,
+                            details: targetWorkshop.location
+                        }
+                    })
+                });
+            } catch (mailError) {
+                console.error("Failed to send email:", mailError);
+            }
+        }
+        
+        // Reload page to reflect changes
         window.location.reload();
       } else {
          setAlert({

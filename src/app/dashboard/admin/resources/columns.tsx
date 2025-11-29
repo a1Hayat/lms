@@ -9,10 +9,52 @@ import { IconEdit, IconTrash } from "@tabler/icons-react"
 import { useState } from "react"
 import { resources } from "../../../../../types/resources"
 import Edit_Resource from "./edit"
+import { AlertDialogDelete } from "./delete"
 
 // Helper component to safely use hooks like useState
 const ActionCell = ({ resource }: { resource: resources }) => {
   const [edit, setEdit] = useState(false)
+  const [Delete, setDelete] = useState(false)
+  const [isLoading, SetIsloading] = useState(false)
+  const [alert, setAlert] = useState({
+    show: false,
+    type: "info" as "success" | "error" | "warning" | "info",
+    title: "",
+    description: "",
+  })
+  const handleDelete = async () => {
+    SetIsloading(true);
+    
+    try {
+      const res = await fetch("/api/resources/delete-resource", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        // IMPORTANT: Sending 'resource_id' as required by your API
+        body: JSON.stringify({ resource_id: resource.id }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to delete resource");
+      }
+
+      // Close dialog and reload on success
+      
+      // Optional: Add a small delay so user sees the dialog close before reload
+      window.location.reload(); 
+    } catch (error: any) {
+      console.error("Delete failed:", error);
+      setAlert({
+        show: true,
+        type: "error",
+        title: "Delete Failed",
+        description: error.message || "Could not delete the resource.",
+      });
+    } finally {
+      SetIsloading(false);
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -20,6 +62,12 @@ const ActionCell = ({ resource }: { resource: resources }) => {
         isOpen={edit}
         onClose={()=>setEdit(false)}
         resource_id={resource.id}
+      />
+      <AlertDialogDelete
+        isOpen={Delete}
+        onClose={()=>setDelete(false)}
+        loading={isLoading}
+        onConfirm={handleDelete}
       />
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="h-8 w-8 p-0">
@@ -37,7 +85,7 @@ const ActionCell = ({ resource }: { resource: resources }) => {
 
         <DropdownMenuItem className="cursor-pointer focus:bg-red-50 dark:focus:bg-red-950/20">
           <IconTrash className="mr-2 h-4 w-4 text-red-500 dark:text-red-700" />
-          <span className="text-red-500 dark:text-red-700">Delete</span>
+          <span className="text-red-500 dark:text-red-700" onClick={()=>setDelete(true)}>Delete</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

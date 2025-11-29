@@ -10,7 +10,7 @@ import { IconEdit, IconTrash } from "@tabler/icons-react"
 export type Workshop = {
   id: number
   session_name: string
-  type: "online" | "physical"
+  type: "online" | "physical" | "hybrid"
   workshop_date: string
   location: string
   status: "opened" | "closed"
@@ -49,9 +49,9 @@ export const createColumns = (
         <div className="flex items-center gap-2 capitalize text-slate-600 dark:text-slate-300">
           {type === "online" ? (
             <Video className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-          ) : (
+          ) : type === "phys" ? (
             <MapPin className="h-4 w-4 text-orange-500 dark:text-orange-400" />
-          )}
+          ) : (<></>) }
           {type}
         </div>
       )

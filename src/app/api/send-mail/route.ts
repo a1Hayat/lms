@@ -8,6 +8,7 @@ import { successRegistrationEmail } from "@/components/email_templates/sucessReg
 import { generalEnrollmentEmail } from "@/components/email_templates/courseEnrollment";
 import { toPlainText } from "@/components/email_templates/plainText";
 import { paymentReceiptEmail } from "@/components/email_templates/payment-receipt";
+import { workshopRegistrationEmail } from "@/components/email_templates/successWorkshopResgister";
 
 export async function POST(req: Request) {
   try {
@@ -34,6 +35,10 @@ export async function POST(req: Request) {
 
       case "resetPassword":
         html = resetPasswordEmail(payload);
+        break;
+
+      case "workshopRegistrationEmail":
+        html = workshopRegistrationEmail(payload);
         break;
 
       case "paymentReceipt":

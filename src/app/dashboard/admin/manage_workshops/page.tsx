@@ -43,12 +43,13 @@ export default function AdminWorkshopsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   
-  // Form data
+  // Form data - Separated address and link for easier UI handling
   const [formData, setFormData] = useState({
     session_name: "",
     type: "online",
     workshop_date: "",
-    location: "",
+    address: "",
+    link: "",
     status: "opened",
   })
 
@@ -123,11 +124,33 @@ export default function AdminWorkshopsPage() {
       .toISOString()
       .slice(0, 16)
 
+    // Parse location based on type
+    let addr = ""
+    let lnk = ""
+
+    if (workshop.type === 'hybrid') {
+        // Assume format: "Address,Link"
+        // Split by last comma to allow commas in address (e.g. "123 St, NY, http://...")
+        const lastComma = workshop.location.lastIndexOf(',')
+        if (lastComma !== -1) {
+            addr = workshop.location.substring(0, lastComma).trim()
+            lnk = workshop.location.substring(lastComma + 1).trim()
+        } else {
+            // Fallback if no comma found
+            addr = workshop.location
+        }
+    } else if (workshop.type === 'online') {
+        lnk = workshop.location
+    } else {
+        addr = workshop.location
+    }
+
     setFormData({
       session_name: workshop.session_name,
       type: workshop.type,
       workshop_date: localISOTime,
-      location: workshop.location,
+      address: addr,
+      link: lnk,
       status: workshop.status,
     })
     setIsModalOpen(true)
@@ -140,7 +163,8 @@ export default function AdminWorkshopsPage() {
       session_name: "",
       type: "online",
       workshop_date: "",
-      location: "",
+      address: "",
+      link: "",
       status: "opened",
     })
     setIsModalOpen(true)
@@ -157,11 +181,29 @@ export default function AdminWorkshopsPage() {
 
     const method = editingId ? "PUT" : "POST"
 
+    // Construct the single location string
+    let finalLocation = ""
+    if (formData.type === 'hybrid') {
+        finalLocation = `${formData.address},${formData.link}`
+    } else if (formData.type === 'online') {
+        finalLocation = formData.link
+    } else {
+        finalLocation = formData.address
+    }
+
+    const payload = {
+        session_name: formData.session_name,
+        type: formData.type,
+        workshop_date: formData.workshop_date,
+        location: finalLocation,
+        status: formData.status
+    }
+
     try {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       })
 
       if (!res.ok) throw new Error()
@@ -229,7 +271,7 @@ export default function AdminWorkshopsPage() {
 
         {/* Dialog Form */}
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>
                 {editingId ? "Edit Workshop" : "Create New Workshop"}
@@ -264,6 +306,7 @@ export default function AdminWorkshopsPage() {
                     <SelectContent>
                       <SelectItem value="online">Online</SelectItem>
                       <SelectItem value="physical">Physical</SelectItem>
+                      <SelectItem value="hybrid">Hybrid</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -282,6 +325,9 @@ export default function AdminWorkshopsPage() {
                     <SelectContent>
                       <SelectItem value="opened">Opened</SelectItem>
                       <SelectItem value="closed">Closed</SelectItem>
+                      {/* Assuming you might want to remove Hybrid from status if it was a mistake, 
+                          but keeping it just in case based on your previous code */}
+                      <SelectItem value="hybrid">Hybrid</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -299,23 +345,34 @@ export default function AdminWorkshopsPage() {
                 />
               </div>
 
-              <div className="grid gap-2">
-                <Label>
-                  {formData.type === "online" ? "Meeting URL" : "Physical Address"}
-                </Label>
-                <Input
-                  placeholder={
-                    formData.type === "online"
-                      ? "https://..."
-                      : "Room 101, Building..."
-                  }
-                  value={formData.location}
-                  onChange={(e) =>
-                    setFormData({ ...formData, location: e.target.value })
-                  }
-                  required
-                />
-              </div>
+              {/* Conditional Location Inputs */}
+              {(formData.type === 'physical' || formData.type === 'hybrid') && (
+                  <div className="grid gap-2">
+                    <Label>Physical Address</Label>
+                    <Input
+                      placeholder="Room 101, Building A, City..."
+                      value={formData.address}
+                      onChange={(e) =>
+                        setFormData({ ...formData, address: e.target.value })
+                      }
+                      required={formData.type === 'physical' || formData.type === 'hybrid'}
+                    />
+                  </div>
+              )}
+
+              {(formData.type === 'online' || formData.type === 'hybrid') && (
+                  <div className="grid gap-2">
+                    <Label>Meeting Link (URL)</Label>
+                    <Input
+                      placeholder="https://zoom.us/j/..."
+                      value={formData.link}
+                      onChange={(e) =>
+                        setFormData({ ...formData, link: e.target.value })
+                      }
+                      required={formData.type === 'online' || formData.type === 'hybrid'}
+                    />
+                  </div>
+              )}
 
               <div className="flex justify-end gap-2 mt-4">
                 <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
