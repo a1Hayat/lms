@@ -8,6 +8,7 @@ import { MoreHorizontal } from "lucide-react"
 import { IconEdit, IconTrash } from "@tabler/icons-react"
 import { useState } from "react"
 import { resources } from "../../../../../types/resources"
+import Edit_Resource from "./edit"
 
 // Helper component to safely use hooks like useState
 const ActionCell = ({ resource }: { resource: resources }) => {
@@ -15,6 +16,11 @@ const ActionCell = ({ resource }: { resource: resources }) => {
 
   return (
     <DropdownMenu>
+      <Edit_Resource
+        isOpen={edit}
+        onClose={()=>setEdit(false)}
+        resource_id={resource.id}
+      />
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="h-8 w-8 p-0">
           <span className="sr-only">Open menu</span>

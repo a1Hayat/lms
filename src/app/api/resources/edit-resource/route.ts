@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 
 export async function PUT(req: Request) {
   try {
-    const { id, title, description, file_path, thumbnail, price } = await req.json();
+    const { id, title, description, price, level } = await req.json();
 
     // Check if id is provided
     if (!id) {
@@ -16,9 +16,8 @@ export async function PUT(req: Request) {
 
     if (title !== undefined) { updates.push("title = ?"); values.push(title); }
     if (description !== undefined) { updates.push("description = ?"); values.push(description); }
-    if (file_path !== undefined) { updates.push("file_path = ?"); values.push(file_path); }
-    if (thumbnail !== undefined) { updates.push("thumbnail = ?"); values.push(thumbnail); }
     if (price !== undefined) { updates.push("price = ?"); values.push(price); }
+    if (level !== undefined) { updates.push("level = ?"); values.push(level); }
 
     if (updates.length === 0) {
       return NextResponse.json({ error: "No fields to update" }, { status: 400 });

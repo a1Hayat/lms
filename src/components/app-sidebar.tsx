@@ -110,21 +110,6 @@ const data = {
       ],
     },
     {
-      title: "Billing",
-      url: "#",
-      icon: IconCreditCard,
-      items: [
-        {
-          title: "Cash Payments",
-          url: "#",
-        },
-        {
-          title: "Online Payments",
-          url: "#",
-        },
-      ],
-    },
-    {
       title: "Orders History",
       url: "#",
       icon: IconHistoryToggle,

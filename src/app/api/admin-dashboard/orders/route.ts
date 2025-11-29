@@ -1,10 +1,11 @@
 // src/app/api/admin-dashboard/orders/route.ts
 import { NextResponse } from "next/server";
-import mysql, { RowDataPacket } from "mysql2/promise"; // Import RowDataPacket
+import { RowDataPacket } from "mysql2/promise";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
+import { db } from "@/lib/db"; // <-- Use your shared pool
 
-// Define the shape of the data returned by your SQL query
+// Define SQL return structure
 interface OrderRow extends RowDataPacket {
   id: number;
   created_at: Date;
@@ -21,27 +22,18 @@ interface OrderRow extends RowDataPacket {
   bundle_title: string | null;
 }
 
-// Database connection
-async function db() {
-  return await mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
-  });
-}
-
-// Removed 'req' since it was unused
 export async function POST() {
-  const conn = await db();
   try {
     const session = await getServerSession(authOptions);
     if (session?.user?.role !== "admin") {
-      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
-    // Add <OrderRow[]> generic here to tell TS what the rows look like
-    const [rows] = await conn.execute<OrderRow[]>(
+    // Use pool.query instead of single connection.execute
+    const [rows] = await db.query<OrderRow[]>(
       `
       SELECT 
         o.id,
@@ -65,10 +57,9 @@ export async function POST() {
       LEFT JOIN resources r ON oi.resource_id = r.id
       LEFT JOIN bundles b ON oi.bundle_id = b.id
       ORDER BY o.created_at DESC
-    `
+      `
     );
 
-    // Now 'order' is automatically typed as OrderRow
     const orders = rows.map((order) => ({
       id: order.id,
       created_at: order.created_at,
@@ -91,8 +82,9 @@ export async function POST() {
     return NextResponse.json({ success: true, orders });
   } catch (error) {
     console.error("Error fetching all orders:", error);
-    return NextResponse.json({ success: false, message: "Server Error" }, { status: 500 });
-  } finally {
-    conn.end();
+    return NextResponse.json(
+      { success: false, message: "Server Error" },
+      { status: 500 }
+    );
   }
 }

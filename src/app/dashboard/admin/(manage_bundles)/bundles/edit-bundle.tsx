@@ -55,53 +55,66 @@ const Edit_Bundle: React.FC<BundleProps> = ({ isOpen, onClose, bundle_id }) => {
 
   // ✅ fetch bundle + course & resource list
   useEffect(() => {
-    if (!isOpen || !bundle_id) return
+    if (!isOpen || !bundle_id) return;
 
     const fetchData = async () => {
-      setFetching(true)
+      setFetching(true);
       try {
-        const bundleRes = await fetch("/api/bundles/fetch-one", {
+        // FIX 1: Use POST since API expects POST, not GET
+        const bundleRes = await fetch("/api/bundles/fetch", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ bundle_id }),
-        })
-        const bundleData = await bundleRes.json()
+        });
 
-        const courseRes = await fetch("/api/courses/fetch-all")
-        const resourceRes = await fetch("/api/resources/fetch-all")
+        const bundleData = await bundleRes.json();
 
-        const courseData = await courseRes.json()
-        const resourceData = await resourceRes.json()
+        const courseRes = await fetch("/api/courses/fetch-all");
+        const resourceRes = await fetch("/api/resources/fetch-all");
 
-        const b = bundleData.bundle
+        const courseData = await courseRes.json();
+        const resourceData = await resourceRes.json();
 
-        setCourses(courseData.courses)
-        setResources(resourceData.resources)
+        const b = bundleData.bundle;
+
+        // FIX 2: Convert items into course IDs + resource IDs
+        const courseIDs = b.items
+          .filter((i: any) => i.type === "course")
+          .map((i: any) => i.id);
+
+        const resourceIDs = b.items
+          .filter((i: any) => i.type === "resource")
+          .map((i: any) => i.id);
+
+        setCourses(courseData.courses);
+        setResources(resourceData.resources);
 
         setFormData({
           title: b.title,
           description: b.description,
-          // 3. Fix map/filter logic typing by inferring from state types above
-          selectedCourses: courseData.courses.filter((c: BundleItem) => b.courses.includes(c.id)),
-          selectedResources: resourceData.resources.filter((r: BundleItem) => b.resources.includes(r.id)),
+          selectedCourses: courseData.courses.filter((c: any) =>
+            courseIDs.includes(c.id)
+          ),
+          selectedResources: resourceData.resources.filter((r: any) =>
+            resourceIDs.includes(r.id)
+          ),
           price: b.price,
           discount_price: b.discount_price,
-        })
-
+        });
       } catch {
-        // 4. Removed unused 'error' variable
         setAlert({
           show: true,
           type: "error",
           title: "Error",
-          description: "Failed to load data"
-        })
+          description: "Failed to load data",
+        });
       }
-      setFetching(false)
-    }
+      setFetching(false);
+    };
 
-    fetchData()
-  }, [isOpen, bundle_id])
+    fetchData();
+  }, [isOpen, bundle_id]);
+
 
   // ✅ auto calculate price
   useEffect(() => {
