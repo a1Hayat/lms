@@ -16,12 +16,9 @@ const ActionCell = ({ resource }: { resource: resources }) => {
   const [edit, setEdit] = useState(false)
   const [Delete, setDelete] = useState(false)
   const [isLoading, SetIsloading] = useState(false)
-  const [alert, setAlert] = useState({
-    show: false,
-    type: "info" as "success" | "error" | "warning" | "info",
-    title: "",
-    description: "",
-  })
+  
+  // REMOVED: Unused 'alert' state to fix the "no-unused-vars" warning.
+
   const handleDelete = async () => {
     SetIsloading(true);
     
@@ -29,7 +26,6 @@ const ActionCell = ({ resource }: { resource: resources }) => {
       const res = await fetch("/api/resources/delete-resource", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        // IMPORTANT: Sending 'resource_id' as required by your API
         body: JSON.stringify({ resource_id: resource.id }),
       });
 
@@ -39,18 +35,18 @@ const ActionCell = ({ resource }: { resource: resources }) => {
         throw new Error(data.error || "Failed to delete resource");
       }
 
-      // Close dialog and reload on success
-      
-      // Optional: Add a small delay so user sees the dialog close before reload
+      // Reload window on success
       window.location.reload(); 
-    } catch (error: any) {
+    } catch (error) {
+      // FIXED: Removed ': any' to fix the "no-explicit-any" error.
+      // We check if it is a standard Error object to safely access the message.
       console.error("Delete failed:", error);
-      setAlert({
-        show: true,
-        type: "error",
-        title: "Delete Failed",
-        description: error.message || "Could not delete the resource.",
-      });
+      
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      
+      // Since we removed the unused custom alert state, you can use a browser alert 
+      // or a Toast notification (like sonner) here to notify the user.
+      alert(`Error: ${errorMessage}`);
     } finally {
       SetIsloading(false);
     }

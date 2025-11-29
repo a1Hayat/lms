@@ -44,11 +44,15 @@ export async function POST(req: Request) {
     await db.query(query, [workshopId, userId]);
 
     return NextResponse.json({ success: true, message: 'Registered successfully' });
-  } catch (error: any) {
+  } catch (error) {
+    // FIXED: Removed ': any' from catch.
     console.error('Registration error:', error);
     
+    // Safely cast error to check for the 'code' property (common in MySQL drivers)
+    const dbError = error as { code?: string };
+
     // Handle duplicate entry (MySQL error code 1062)
-    if (error.code === 'ER_DUP_ENTRY') {
+    if (dbError.code === 'ER_DUP_ENTRY') {
         return NextResponse.json({ error: 'Already registered' }, { status: 409 });
     }
 

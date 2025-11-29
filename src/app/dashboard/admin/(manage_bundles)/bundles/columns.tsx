@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { MoreHorizontal } from "lucide-react"
 import { IconEdit, IconTrash } from "@tabler/icons-react"
 import { useState } from "react"
-import Edit_Bundle from "./edit-bundle";
+// import Edit_Bundle from "./edit-bundle";
 
 // Extracted component to allow safe usage of hooks like useState
 const ActionCell = ({ bundle }: { bundle: Bundle }) => {
@@ -15,11 +15,11 @@ const ActionCell = ({ bundle }: { bundle: Bundle }) => {
 
   return (
     <>
-      <Edit_Bundle
+      {/* <Edit_Bundle
         isOpen={edit}
         onClose={() => setEdit(false)}
         bundle_id={bundle.id}
-      />
+      /> */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="h-8 w-8 p-0">

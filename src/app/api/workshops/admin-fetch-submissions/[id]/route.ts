@@ -3,10 +3,13 @@ import { db } from '@/lib/db';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  // FIXED: Type 'params' as a Promise
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const workshopId = params.id;
+    // FIXED: Await the params to get the ID
+    const { id } = await params;
+    const workshopId = id;
 
     if (!workshopId) {
       return NextResponse.json({ error: 'Workshop ID is required' }, { status: 400 });

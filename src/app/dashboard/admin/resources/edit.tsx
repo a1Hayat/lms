@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select"
 import { Loader2 } from "lucide-react"
 import { AppAlert } from "@/components/alerts"
-import Image from "next/image"
+// FIXED: Removed unused 'Image' import
 
 interface EditModalProps {
   isOpen: boolean
@@ -173,7 +173,7 @@ const Edit_Resource: React.FC<EditModalProps> = ({ isOpen, onClose, resource_id 
 
       const res = await fetch("/api/resources/edit-resource", {
         method: "PUT",
-          ...formData,
+        // Note: '...formData' was removed here as it shouldn't be spread into fetch options
         body: data, 
       })
 
@@ -194,12 +194,16 @@ const Edit_Resource: React.FC<EditModalProps> = ({ isOpen, onClose, resource_id 
         window.location.reload()
       }, 1000)
 
-    } catch (error: any) {
+    } catch (error) {
+      // FIXED: Removed ': any' and added safe type narrowing
+      console.error("Save failed", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to save changes.";
+
       setAlert({
         show: true,
         type: "error",
         title: "Error",
-        description: error.message || "Failed to save changes.",
+        description: errorMessage,
       })
       setIsSaving(false)
     }
